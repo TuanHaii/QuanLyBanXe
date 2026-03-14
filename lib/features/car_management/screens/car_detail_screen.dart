@@ -86,7 +86,7 @@ class CarDetailScreen extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(car.status).withOpacity(0.1),
+                          color: _getStatusColor(car.status).withValues(alpha: .1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(

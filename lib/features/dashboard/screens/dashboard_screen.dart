@@ -68,7 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       expandedHeight: 240.0,
       pinned: true,
       stretch: true,
-      backgroundColor: const Color(0xFF121212).withOpacity(0.8),
+      backgroundColor: const Color(0xFF121212).withValues(alpha: 0.8),
       elevation: 0,
       actions: [
         IconButton(
@@ -114,10 +114,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.2),
+                    Colors.black.withValues(alpha: 0.2),
                     const Color(
                       0xFF121212,
-                    ).withOpacity(0.95), // Khớp với màu nền ở dưới
+                    ).withValues(alpha: 0.95), // Khớp với màu nền ở dưới
                   ],
                   stops: const [0.0, 0.6, 1.0],
                 ),

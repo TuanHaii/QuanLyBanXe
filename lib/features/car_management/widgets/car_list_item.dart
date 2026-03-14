@@ -89,7 +89,7 @@ class CarListItem extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(car.status).withOpacity(0.1),
+                            color: _getStatusColor(car.status).withValues(alpha: .1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

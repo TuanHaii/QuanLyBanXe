@@ -44,7 +44,7 @@ class SaleListItem extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(sale.status).withOpacity(0.1),
+                      color: _getStatusColor(sale.status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
