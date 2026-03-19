@@ -28,5 +28,5 @@ void main() async {
     ),
   );
 
-  runApp(const QuanLyBanXeApp());
+  runApp(const MyApp());
 }

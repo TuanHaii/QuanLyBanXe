@@ -4,8 +4,8 @@ import 'shared/themes/app_theme.dart';
 import 'shared/constants/app_constants.dart';
 import 'shared/services/router_service.dart';
 
-class QuanLyBanXeApp extends StatelessWidget {
-  const QuanLyBanXeApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
