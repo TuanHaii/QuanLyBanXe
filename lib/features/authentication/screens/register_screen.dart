@@ -5,8 +5,9 @@ import '../../../shared/constants/app_constants.dart';
 import '../../../shared/themes/app_colors.dart';
 import '../../../shared/services/service_locator.dart';
 import '../services/auth_service.dart';
-import '../widgets/auth_text_field.dart';
-
+import '../widgets/precision_text_field.dart';
+import '../widgets/precision_primary_button.dart';
+import '../widgets/precision_secondary_button.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -84,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 24),
                 // Name field
-                AuthTextField(
+                PrecisionTextField(
                   controller: _nameController,
                   label: 'Họ và tên',
                   hint: 'Nhập họ và tên của bạn',
@@ -98,7 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Email field
-                AuthTextField(
+                PrecisionTextField(
                   controller: _emailController,
                   label: 'Email',
                   hint: 'Nhập email của bạn',
@@ -117,7 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Phone field
-                AuthTextField(
+                PrecisionTextField(
                   controller: _phoneController,
                   label: 'Số điện thoại',
                   hint: 'Nhập số điện thoại của bạn',
@@ -135,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Password field
-                AuthTextField(
+                PrecisionTextField(
                   controller: _passwordController,
                   label: 'Mật khẩu',
                   hint: 'Nhập mật khẩu của bạn',
@@ -163,7 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Confirm password field
-                AuthTextField(
+                PrecisionTextField(
                   controller: _confirmPasswordController,
                   label: 'Xác nhận mật khẩu',
                   hint: 'Nhập lại mật khẩu của bạn',
