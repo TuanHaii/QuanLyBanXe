@@ -30,11 +30,11 @@ class RouterService {
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
-      GoRoute(
-        path: RouteNames.register,
-        name: 'register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
+      // GoRoute(
+      //   path: RouteNames.register,
+      //   name: 'register',
+      //   builder: (context, state) => const RegisterScreen(),
+      // ),
 
       // Dashboard
       GoRoute(

@@ -1,32 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+// Đảm bảo đường dẫn import này khớp với cấu trúc thư mục của bạn
+import 'features/authentication/screens/login_screen.dart'; 
 
-import 'app.dart';
-import 'shared/services/service_locator.dart';
+void main() {
+  runApp(const PrecisionApp());
+}
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+class PrecisionApp extends StatelessWidget {
+  const PrecisionApp({super.key});
 
-  // Initialize Hive for local storage
-  await Hive.initFlutter();
-
-  // Setup service locator (dependency injection)
-  await setupServiceLocator();
-
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
-
-  runApp(const MyApp());
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Precision Auto',
+      debugShowCheckedModeBanner: false, // Tắt chữ DEBUG ở góc phải
+      theme: ThemeData.dark(), // Mặc định bật Dark Theme
+      home: const LoginScreen(), // Gọi trang Login bạn vừa code
+    );
+  }
 }

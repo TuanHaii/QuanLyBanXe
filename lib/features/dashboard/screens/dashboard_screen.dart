@@ -41,7 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildGreetingSection(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 24), 
                   _buildStatsGrid(),
                   const SizedBox(height: 32),
                   _buildSectionTitle('Truy cập nhanh'),
