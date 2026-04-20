@@ -100,18 +100,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                     // TODO: Pick images
                   },
                   borderRadius: BorderRadius.circular(12),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.add_photo_alternate_outlined,
                         size: 48,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Thêm hình ảnh',
-                        style: TextStyle(color: Colors.grey),
+                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                       ),
                     ],
                   ),

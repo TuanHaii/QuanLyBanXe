@@ -4,11 +4,52 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  static TextTheme _buildTextTheme(Brightness brightness) {
+    final baseTextColor =
+        brightness == Brightness.dark ? AppColors.textLight : AppColors.textPrimary;
+
+    return TextTheme(
+      displayLarge: AppTextStyles.displayLarge,
+      displayMedium: AppTextStyles.displayMedium,
+      displaySmall: AppTextStyles.displaySmall,
+      headlineLarge: AppTextStyles.headlineLarge,
+      headlineMedium: AppTextStyles.headlineMedium,
+      headlineSmall: AppTextStyles.headlineSmall,
+      titleLarge: AppTextStyles.titleLarge,
+      titleMedium: AppTextStyles.titleMedium,
+      titleSmall: AppTextStyles.titleSmall,
+      bodyLarge: AppTextStyles.bodyLarge,
+      bodyMedium: AppTextStyles.bodyMedium,
+      bodySmall: AppTextStyles.bodySmall,
+      labelLarge: AppTextStyles.labelLarge,
+      labelMedium: AppTextStyles.labelMedium,
+      labelSmall: AppTextStyles.labelSmall,
+    ).apply(
+      fontFamily: 'Roboto',
+      bodyColor: baseTextColor,
+      displayColor: baseTextColor,
+    );
+  }
+
+  static TextTheme _buildPrimaryTextTheme(Brightness brightness) {
+    final onPrimary = brightness == Brightness.dark
+        ? AppColors.textDark
+        : AppColors.textLight;
+
+    return _buildTextTheme(brightness).apply(
+      bodyColor: onPrimary,
+      displayColor: onPrimary,
+    );
+  }
+
   /// Light Theme
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: 'Roboto',
+      textTheme: _buildTextTheme(Brightness.light),
+      primaryTextTheme: _buildPrimaryTextTheme(Brightness.light),
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.backgroundLight,
       colorScheme: const ColorScheme.light(
@@ -111,6 +152,9 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: 'Roboto',
+      textTheme: _buildTextTheme(Brightness.dark),
+      primaryTextTheme: _buildPrimaryTextTheme(Brightness.dark),
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.backgroundDark,
       colorScheme: const ColorScheme.dark(

@@ -8,7 +8,7 @@ import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/car_management/screens/car_list_screen.dart';
 import '../../features/car_management/screens/car_detail_screen.dart';
 import '../../features/car_management/screens/add_car_screen.dart';
-import '../../features/sales/screens/sales_screen.dart';
+import '../../features/mall/screens/mall_screen.dart';
 
 class RouterService {
   RouterService._();

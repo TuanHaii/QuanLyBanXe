@@ -45,75 +45,115 @@ class AppColors {
 class AppTextStyles {
   AppTextStyles._();
 
-  static const TextStyle headline1 = TextStyle(
-    fontSize: 32,
-    fontWeight: FontWeight.bold,
-    letterSpacing: -1.5,
+  // Material 3 aligned scale.
+  static const TextStyle displayLarge = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 52,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -1.1,
   );
 
-  static const TextStyle headline2 = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.bold,
-    letterSpacing: -0.5,
+  static const TextStyle displayMedium = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 44,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.9,
   );
 
-  static const TextStyle headline3 = TextStyle(
-    fontSize: 24,
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 36,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.6,
+  );
+
+  static const TextStyle headlineLarge = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 30,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.4,
+  );
+
+  static const TextStyle headlineMedium = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 26,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.25,
+  );
+
+  static const TextStyle headlineSmall = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 22,
     fontWeight: FontWeight.w600,
   );
 
-  static const TextStyle headline4 = TextStyle(
+  static const TextStyle titleLarge = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.25,
   );
 
-  static const TextStyle headline5 = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w500,
-  );
-
-  static const TextStyle headline6 = TextStyle(
+  static const TextStyle titleMedium = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 16,
-    fontWeight: FontWeight.w500,
-    letterSpacing: 0.15,
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle titleSmall = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
   );
 
   static const TextStyle bodyLarge = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 16,
-    fontWeight: FontWeight.normal,
-    letterSpacing: 0.5,
+    fontWeight: FontWeight.w400,
+    height: 1.35,
   );
 
   static const TextStyle bodyMedium = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 14,
-    fontWeight: FontWeight.normal,
-    letterSpacing: 0.25,
+    fontWeight: FontWeight.w400,
+    height: 1.35,
   );
 
   static const TextStyle bodySmall = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 12,
-    fontWeight: FontWeight.normal,
-    letterSpacing: 0.4,
+    fontWeight: FontWeight.w400,
+    height: 1.3,
   );
 
-  static const TextStyle button = TextStyle(
+  static const TextStyle labelLarge = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    letterSpacing: 1.25,
   );
 
-  static const TextStyle caption = TextStyle(
+  static const TextStyle labelMedium = TextStyle(
+    fontFamily: 'Roboto',
     fontSize: 12,
-    fontWeight: FontWeight.normal,
-    letterSpacing: 0.4,
+    fontWeight: FontWeight.w600,
   );
 
-  static const TextStyle overline = TextStyle(
-    fontSize: 10,
-    fontWeight: FontWeight.normal,
-    letterSpacing: 1.5,
+  static const TextStyle labelSmall = TextStyle(
+    fontFamily: 'Roboto',
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
   );
+
+  // Legacy aliases kept for backward compatibility in old screens.
+  static const TextStyle headline1 = displayLarge;
+  static const TextStyle headline2 = displayMedium;
+  static const TextStyle headline3 = displaySmall;
+  static const TextStyle headline4 = headlineLarge;
+  static const TextStyle headline5 = headlineMedium;
+  static const TextStyle headline6 = headlineSmall;
+  static const TextStyle button = labelLarge;
+  static const TextStyle caption = bodySmall;
+  static const TextStyle overline = labelSmall;
 }
 
 /// App Dimensions

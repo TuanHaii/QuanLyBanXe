@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/sale_model.dart';
+import '../models/mall_model.dart';
+import '../../../shared/themes/app_colors.dart';
 
 class SaleListItem extends StatelessWidget {
   final SaleModel sale;
@@ -49,8 +50,7 @@ class SaleListItem extends StatelessWidget {
                     ),
                     child: Text(
                       sale.statusText,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTextStyles.labelMedium.copyWith(
                         color: _getStatusColor(sale.status),
                         fontWeight: FontWeight.w500,
                       ),
