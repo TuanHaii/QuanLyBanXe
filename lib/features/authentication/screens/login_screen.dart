@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-
+import '../../dashboard/screens/dashboard_screen.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/primary_auth_button.dart';
@@ -74,13 +74,15 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
-
+    // mounted kiểm tra xem widget LoginScreen này còn đang hiển thị trên màn hình không
     if (!mounted) return;
 
     setState(() => _isLoading = false);
-    ScaffoldMessenger.of(
+    // lệnh chuyển trang xem và xóa lịch sử không cho back lại login
+    Navigator.pushReplacement(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Login successful!')));
+      MaterialPageRoute(builder: (context) => const DashboardScreen()),
+    );
   }
 
   void _openRegisterScreen() {

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
 import '../../../shared/services/service_locator.dart';
+import '../../../shared/widgets/BubbleNavBar.dart';
 import '../../authentication/services/auth_service.dart';
 import '../widgets/stat_card.dart';
 
@@ -41,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildGreetingSection(),
-                  const SizedBox(height: 24), 
+                  const SizedBox(height: 24),
                   _buildStatsGrid(),
                   const SizedBox(height: 32),
                   _buildSectionTitle('Truy cập nhanh'),
@@ -54,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         bottomNavigationBar: _buildBottomNavigationBar(),
+        extendBody: true, // Để thanh điều hướng trong suốt hơn
       ),
     );
   }
@@ -145,7 +147,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 6),
         Text(
           'Chào mừng bạn đến với hệ thống quản lý bán xe',
-          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6)),
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.6),
+          ),
         ),
       ],
     );
@@ -241,39 +246,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// 6. Thanh điều hướng dưới cùng
   Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 1),
-        ),
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        backgroundColor: const Color(0xFF1A1A1A),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.white.withValues(alpha: 0.5),
-        elevation: 0,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_rounded),
-            label: 'Tổng quan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_rounded),
-            label: 'Xe',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_offer_rounded),
-            label: 'Bán hàng',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Tài khoản',
-          ),
-        ],
-      ),
+    return BubbleNavBar(
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() => _selectedIndex = index);
+      },
     );
   }
 
