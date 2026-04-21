@@ -19,7 +19,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final metrics = _DashboardMetrics.fromWidth(MediaQuery.sizeOf(context).width);
+    final metrics = _DashboardMetrics.fromWidth(
+      MediaQuery.sizeOf(context).width,
+    );
     final baseDarkTheme = ThemeData.dark();
 
     return Theme(
@@ -327,7 +329,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _QuickActionItem(
         title: 'Báo cáo',
         icon: Icons.pie_chart_outline_rounded,
-        onTap: () => _showFeatureComingSoon('Mục báo cáo sẽ có trong bản cập nhật tới.'),
+        onTap: () =>
+            _showFeatureComingSoon('Mục báo cáo sẽ có trong bản cập nhật tới.'),
       ),
     ];
 
@@ -379,7 +382,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Column(
       children: transactions
-          .map((transaction) => _buildRecentTransactionItem(transaction, metrics))
+          .map(
+            (transaction) => _buildRecentTransactionItem(transaction, metrics),
+          )
           .toList(),
     );
   }
@@ -401,7 +406,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1C20),
         borderRadius: BorderRadius.circular(metrics.px(16)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -471,7 +479,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const navItems = [
       _DashboardNavItem(icon: Icons.home_outlined, label: 'Trang Chủ'),
       _DashboardNavItem(icon: Icons.storefront_outlined, label: 'Mall'),
-      _DashboardNavItem(icon: Icons.notifications_none_rounded, label: 'Thông Báo'),
+      _DashboardNavItem(
+        icon: Icons.notifications_none_rounded,
+        label: 'Thông Báo',
+      ),
       _DashboardNavItem(icon: Icons.person_outline_rounded, label: 'Tôi'),
     ];
 
@@ -479,7 +490,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF121316),
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06), width: 1),
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.06),
+            width: 1,
+          ),
         ),
       ),
       child: SafeArea(
@@ -560,7 +574,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _selectedIndex = index);
         return;
       case 1:
-        context.go(RouteNames.sales);
+        context.go(RouteNames.mall);
         return;
       case 2:
         _showNotifications();
