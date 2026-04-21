@@ -54,11 +54,11 @@ class _CarListScreenState extends State<CarListScreen> {
 
   List<CarModel> get _filteredCars {
     return _cars.where((car) {
-      final matchesSearch = car.name
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
+      final matchesSearch =
+          car.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           car.brand.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesStatus = _filterStatus == null || car.status == _filterStatus;
+      final matchesStatus =
+          _filterStatus == null || car.status == _filterStatus;
       return matchesSearch && matchesStatus;
     }).toList();
   }
@@ -101,9 +101,7 @@ class _CarListScreenState extends State<CarListScreen> {
           // Car list
           Expanded(
             child: _filteredCars.isEmpty
-                ? const Center(
-                    child: Text('Không tìm thấy xe nào'),
-                  )
+                ? const Center(child: Text('Không tìm thấy xe nào'))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _filteredCars.length,
@@ -138,9 +136,9 @@ class _CarListScreenState extends State<CarListScreen> {
           children: [
             Text(
               'Lọc theo trạng thái',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Wrap(

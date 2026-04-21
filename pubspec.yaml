@@ -27,7 +27,7 @@ dependencies:
   go_router: ^14.4.1
 
   # Network & API
-  dio: ^5.7.0
+  dio: ^5.9.2
   http: ^1.2.2
   connectivity_plus: ^6.0.5
 

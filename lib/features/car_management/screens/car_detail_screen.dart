@@ -6,10 +6,7 @@ import '../../../shared/themes/app_colors.dart';
 class CarDetailScreen extends StatelessWidget {
   final String carId;
 
-  const CarDetailScreen({
-    super.key,
-    required this.carId,
-  });
+  const CarDetailScreen({super.key, required this.carId});
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +72,8 @@ class CarDetailScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           car.name,
-                          style:
-                              Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Container(
@@ -87,7 +82,9 @@ class CarDetailScreen extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(car.status).withValues(alpha: .1),
+                          color: _getStatusColor(
+                            car.status,
+                          ).withValues(alpha: .1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -105,9 +102,9 @@ class CarDetailScreen extends StatelessWidget {
                   Text(
                     car.formattedPrice,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   // Details
@@ -128,8 +125,8 @@ class CarDetailScreen extends StatelessWidget {
                     Text(
                       'Mô tả',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -167,9 +164,9 @@ class CarDetailScreen extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Card(
@@ -194,7 +191,9 @@ class CarDetailScreen extends StatelessWidget {
           ),
           Text(
             value,
-            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -224,9 +223,7 @@ class CarDetailScreen extends StatelessWidget {
             child: const Text('Hủy'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               // TODO: Delete car
               Navigator.pop(context);

@@ -7,7 +7,6 @@ class StorageService {
   final SharedPreferences _prefs;
 
   StorageService(this._prefs);
-
   // Token management
   Future<void> saveToken(String token) async {
     await _prefs.setString(AppConstants.tokenKey, token);

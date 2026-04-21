@@ -1,147 +1,88 @@
 import 'package:dio/dio.dart';
-import 'package:logger/logger.dart';
-
-import '../constants/app_constants.dart';
+import 'storage_service.dart';
 
 class ApiService {
   late final Dio _dio;
-  final Logger _logger = Logger();
+  final StorageService _storageService;
 
-  ApiService() {
+  ApiService(this._storageService) {
     _dio = Dio(
       BaseOptions(
-        baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(milliseconds: AppConstants.connectionTimeout),
-        receiveTimeout: const Duration(milliseconds: AppConstants.receiveTimeout),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        // Dùng 10.0.2.2 cho máy ảo Android, hoặc localhost/IP thật tuỳ môi trường
+        baseUrl: 'http://10.0.2.2:3000/api',
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {'Content-Type': 'application/json'},
       ),
     );
 
-    _setupInterceptors();
-  }
-
-  void _setupInterceptors() {
+    // Interceptor để tự động gắn Token vào mọi request
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
-          _logger.d('REQUEST[${options.method}] => PATH: ${options.path}');
+        onRequest: (options, handler) async {
+          final token = await _storageService.getToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          _logger.d(
-            'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
-          );
           return handler.next(response);
         },
-        onError: (error, handler) {
-          _logger.e(
-            'ERROR[${error.response?.statusCode}] => PATH: ${error.requestOptions.path}',
-          );
-          return handler.next(error);
+        onError: (DioException e, handler) {
+          // TODO: Có thể xử lý văng ra trang Login nếu mã lỗi là 401 ở đây
+          return handler.next(e);
         },
       ),
     );
   }
 
-  /// Set auth token for authenticated requests
-  void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
-  }
+  // =========================================================================
+  // CÁC HÀM WRAPPER METHOD CHO HTTP REQUESTS
+  // =========================================================================
 
-  /// Remove auth token
-  void removeAuthToken() {
-    _dio.options.headers.remove('Authorization');
-  }
-
-  /// GET request
-  Future<Response<T>> get<T>(
+  Future<Response> get(
     String path, {
     Map<String, dynamic>? queryParameters,
-    Options? options,
   }) async {
-    return await _dio.get<T>(
-      path,
-      queryParameters: queryParameters,
-      options: options,
-    );
+    try {
+      return await _dio.get(path, queryParameters: queryParameters);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  /// POST request
-  Future<Response<T>> post<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.post<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+  Future<Response> post(String path, {dynamic data}) async {
+    try {
+      return await _dio.post(path, data: data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  /// PUT request
-  Future<Response<T>> put<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.put<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+  Future<Response> put(String path, {dynamic data}) async {
+    try {
+      return await _dio.put(path, data: data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  /// DELETE request
-  Future<Response<T>> delete<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.delete<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+  Future<Response> delete(String path, {dynamic data}) async {
+    try {
+      return await _dio.delete(path, data: data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  /// PATCH request
-  Future<Response<T>> patch<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.patch<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
-  }
-
-  /// Upload file
-  Future<Response<T>> uploadFile<T>(
-    String path, {
-    required FormData formData,
-    void Function(int, int)? onSendProgress,
-  }) async {
-    return await _dio.post<T>(
-      path,
-      data: formData,
-      onSendProgress: onSendProgress,
-      options: Options(
-        headers: {'Content-Type': 'multipart/form-data'},
-      ),
-    );
+  // Hàm xử lý lỗi chung để bóc tách thông báo từ Backend
+  Exception _handleError(DioException e) {
+    if (e.response != null && e.response?.data != null) {
+      // Backend của bạn trả về { "success": false, "message": "Lỗi gì đó" }
+      final message = e.response?.data['message'] ?? 'Đã xảy ra lỗi hệ thống';
+      return Exception(message);
+    }
+    return Exception('Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.');
   }
 }

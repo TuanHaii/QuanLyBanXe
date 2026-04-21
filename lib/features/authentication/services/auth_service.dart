@@ -1,87 +1,40 @@
-import 'package:quan_ly_ban_xe/shared/services/api_service.dart';
-import 'package:quan_ly_ban_xe/shared/services/storage_service.dart';
-
+import 'package:dio/dio.dart';
+import '../../../shared/services/api_service.dart';
+import '../../../shared/services/storage_service.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String mockEmail = 'admin@mock.com';
-  static const String mockPassword = '123456';
-  static const String _mockToken = 'mock-token-admin';
+  final ApiService _apiService;
+  final StorageService _storageService;
+  bool _isLoggedIn = false;
+  UserModel? _currentUser;
 
-  final ApiService apiService;
-  final StorageService storageService;
+  bool get isLoggedIn => _isLoggedIn;
+  UserModel? get currentUser => _currentUser;
 
-  AuthService({
-    required this.apiService,
-    required this.storageService,
-  });
+  AuthService(this._apiService, this._storageService);
 
-  /// Check if user is logged in
-  bool get isLoggedIn => storageService.getToken() != null;
+  // Phương thức khởi tạo để kiểm tra trạng thái đăng nhập khi app bắt đầu
+  Future<void> initializeAuth() async {
+    final token = await _storageService.getToken();
 
-  /// Get current user data
-  UserModel? get currentUser {
-    final userData = storageService.getUserData();
-    if (userData != null) {
-      return UserModel.fromJson(userData);
-    }
-    return null;
-  }
-
-  UserModel get mockUser => const UserModel(
-        id: 'mock-admin-001',
-        name: 'Admin Demo',
-        email: mockEmail,
-        phone: '0987654321',
-        role: 'admin',
-      );
-
-  Future<void> _saveAuthSession({
-    required String token,
-    required Map<String, dynamic> userData,
-  }) async {
-    await storageService.saveToken(token);
-    await storageService.saveUserData(userData);
-    apiService.setAuthToken(token);
-  }
-
-  /// Login with email and password
-  Future<UserModel> login({
-    required String email,
-    required String password,
-  }) async {
-    final normalizedEmail = email.trim().toLowerCase();
-
-    if (normalizedEmail == mockEmail && password == mockPassword) {
-      final user = mockUser;
-      await _saveAuthSession(token: _mockToken, userData: user.toJson());
-      return user;
-    }
-
-    try {
-      final response = await apiService.post(
-        '/auth/login',
-        data: {
-          'email': normalizedEmail,
-          'password': password,
-        },
-      );
-
-      final data = response.data as Map<String, dynamic>;
-      final token = data['token'] as String;
-      final userData = data['user'] as Map<String, dynamic>;
-
-      await _saveAuthSession(token: token, userData: userData);
-
-      return UserModel.fromJson(userData);
-    } catch (e) {
-      throw Exception(
-        'Chưa có database/API. Dùng tài khoản mẫu: $mockEmail / $mockPassword',
-      );
+    if (token != null && token.isNotEmpty) {
+      try {
+        // Dùng token gọi thử lấy Profile để xác nhận Token chưa hết hạn
+        _currentUser = await getProfile();
+        _isLoggedIn = true;
+      } catch (e) {
+        // Nếu lỗi (vd: mã 401 do token hết hạn), tiến hành dọn dẹp
+        await _storageService.removeToken();
+        _isLoggedIn = false;
+        _currentUser = null;
+      }
+    } else {
+      _isLoggedIn = false;
+      _currentUser = null;
     }
   }
 
-  /// Register new user
   Future<UserModel> register({
     required String name,
     required String email,
@@ -89,7 +42,7 @@ class AuthService {
     required String phone,
   }) async {
     try {
-      final response = await apiService.post(
+      final response = await _apiService.post(
         '/auth/register',
         data: {
           'name': name,
@@ -99,83 +52,118 @@ class AuthService {
         },
       );
 
-      final data = response.data as Map<String, dynamic>;
-      final token = data['token'] as String;
-      final userData = data['user'] as Map<String, dynamic>;
+      if (response.data['success'] == true) {
+        final data = response.data['data'];
+        await _storageService.saveToken(data['token']);
 
-      await _saveAuthSession(token: token, userData: userData);
+        // Cập nhật trạng thái
+        _currentUser = UserModel.fromJson(data['user']);
+        _isLoggedIn = true;
 
-      return UserModel.fromJson(userData);
-    } catch (e) {
-      final user = UserModel(
-        id: 'mock-${DateTime.now().millisecondsSinceEpoch}',
-        name: name,
-        email: email.trim().toLowerCase(),
-        phone: phone,
-        role: 'user',
-        createdAt: DateTime.now(),
-      );
-
-      await _saveAuthSession(
-        token: 'mock-token-${user.id}',
-        userData: user.toJson(),
-      );
-
-      return user;
+        return _currentUser!;
+      }
+      throw Exception(response.data['message']);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Lỗi đăng ký');
     }
   }
 
-  /// Logout
+  Future<UserModel> login(String email, String password) async {
+    try {
+      final response = await _apiService.post(
+        '/auth/login',
+        data: {'email': email, 'password': password},
+      );
+
+      if (response.data['success'] == true) {
+        final data = response.data['data'];
+        await _storageService.saveToken(data['token']);
+
+        // Cập nhật trạng thái
+        _currentUser = UserModel.fromJson(data['user']);
+        _isLoggedIn = true;
+
+        return _currentUser!;
+      }
+      throw Exception(response.data['message']);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Sai email hoặc mật khẩu');
+    }
+  }
+
   Future<void> logout() async {
     try {
-      final token = storageService.getToken();
-      if (token != null && !token.startsWith('mock-token')) {
-        await apiService.post('/auth/logout');
-      }
+      // Gọi API để hủy token trên server (nếu BE có xử lý blacklist)
+      await _apiService.post('/auth/logout');
     } catch (e) {
-      // Ignore logout errors
+      // Bỏ qua lỗi mạng khi logout, vẫn phải xóa token local
     } finally {
-      await storageService.removeToken();
-      await storageService.removeUserData();
-      apiService.removeAuthToken();
+      // Dọn dẹp token và biến trạng thái
+      await _storageService.removeToken();
+      _isLoggedIn = false;
+      _currentUser = null;
     }
   }
 
-  /// Forgot password
-  Future<void> forgotPassword(String email) async {
-    await apiService.post(
-      '/auth/forgot-password',
-      data: {'email': email},
-    );
+  Future<String?> forgotPassword(String email) async {
+    try {
+      final response = await _apiService.post(
+        '/auth/forgot-password',
+        data: {'email': email},
+      );
+      return response.data['data']?['resetToken'];
+    } catch (e) {
+      throw Exception('Không thể gửi yêu cầu khôi phục');
+    }
   }
 
-  /// Reset password
-  Future<void> resetPassword({
-    required String token,
-    required String password,
+  Future<void> resetPassword(String token, String newPassword) async {
+    try {
+      await _apiService.post(
+        '/auth/reset-password',
+        data: {'token': token, 'password': newPassword},
+      );
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data['message'] ?? 'Token không hợp lệ hoặc hết hạn',
+      );
+    }
+  }
+
+  Future<UserModel> getProfile() async {
+    try {
+      final response = await _apiService.get('/auth/profile');
+      if (response.data['success'] == true) {
+        _currentUser = UserModel.fromJson(response.data['data']);
+        return _currentUser!;
+      }
+      throw Exception('Không thể tải hồ sơ');
+    } catch (e) {
+      throw Exception('Lỗi kết nối hồ sơ');
+    }
+  }
+
+  Future<UserModel> updateProfile({
+    String? name,
+    String? phone,
+    String? email,
   }) async {
-    await apiService.post(
-      '/auth/reset-password',
-      data: {
-        'token': token,
-        'password': password,
-      },
-    );
-  }
-
-  /// Update user profile
-  Future<UserModel> updateProfile(Map<String, dynamic> data) async {
-    final response = await apiService.put('/auth/profile', data: data);
-    final userData = response.data as Map<String, dynamic>;
-    await storageService.saveUserData(userData);
-    return UserModel.fromJson(userData);
-  }
-
-  /// Initialize auth state (call on app start)
-  Future<void> initializeAuth() async {
-    final token = storageService.getToken();
-    if (token != null) {
-      apiService.setAuthToken(token);
+    try {
+      final response = await _apiService.put(
+        '/auth/profile',
+        data: {
+          if (name != null) 'name': name,
+          if (phone != null) 'phone': phone,
+          if (email != null) 'email': email,
+        },
+      );
+      if (response.data['success'] == true) {
+        _currentUser = UserModel.fromJson(response.data['data']);
+        return _currentUser!;
+      }
+      throw Exception('Cập nhật thất bại');
+    } catch (e) {
+      throw Exception('Lỗi cập nhật hồ sơ');
     }
   }
 }
