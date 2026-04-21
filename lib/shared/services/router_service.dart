@@ -9,6 +9,8 @@ import '../../features/car_management/screens/car_list_screen.dart';
 import '../../features/car_management/screens/car_detail_screen.dart';
 import '../../features/car_management/screens/add_car_screen.dart';
 import '../../features/mall/screens/mall_screen.dart';
+import '../../features/mall/screens/sales_screen.dart';
+import '../../features/mall/screens/sale_detail_screen.dart';
 
 class RouterService {
   RouterService._();
@@ -63,11 +65,25 @@ class RouterService {
         builder: (context, state) => const AddCarScreen(),
       ),
 
+      // Mall Route
+      GoRoute(
+        path: RouteNames.mall,
+        name: 'mall',
+        builder: (context, state) => const MallScreen(),
+      ),
       // Sales Routes
       GoRoute(
         path: RouteNames.sales,
         name: 'sales',
         builder: (context, state) => const SalesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.saleDetail,
+        name: 'saleDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return SaleDetailScreen(saleId: id);
+        },
       ),
     ],
   );
