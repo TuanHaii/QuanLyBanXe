@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/car_model.dart';
+import '../../../shared/themes/app_colors.dart';
 
 class CarDetailScreen extends StatelessWidget {
   final String carId;
@@ -91,7 +92,7 @@ class CarDetailScreen extends StatelessWidget {
                         ),
                         child: Text(
                           car.statusText,
-                          style: TextStyle(
+                          style: AppTextStyles.labelMedium.copyWith(
                             color: _getStatusColor(car.status),
                             fontWeight: FontWeight.w600,
                           ),
@@ -189,11 +190,11 @@ class CarDetailScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.grey),
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w500),
+            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
           ),
         ],
       ),

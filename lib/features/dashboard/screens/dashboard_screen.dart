@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
+import '../../../shared/themes/app_colors.dart';
 import '../../../shared/services/service_locator.dart';
-import '../../../shared/widgets/BubbleNavBar.dart';
 import '../../authentication/services/auth_service.dart';
 import '../widgets/stat_card.dart';
 
@@ -19,110 +19,209 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Đảm bảo app ở chế độ Dark Mode cho màn hình này
+    final metrics = _DashboardMetrics.fromWidth(
+      MediaQuery.sizeOf(context).width,
+    );
+    final baseDarkTheme = ThemeData.dark();
+
     return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF121212),
+      data: baseDarkTheme.copyWith(
+        textTheme: baseDarkTheme.textTheme.apply(fontFamily: 'Roboto'),
+        primaryTextTheme: baseDarkTheme.primaryTextTheme.apply(
+          fontFamily: 'Roboto',
+        ),
+        scaffoldBackgroundColor: const Color(0xFF0A0B0D),
         colorScheme: const ColorScheme.dark(
-          primary: Colors.blueAccent,
-          surface: Color(0xFF1E1E1E),
+          primary: Color(0xFFE0B54E),
+          surface: Color(0xFF17191D),
         ),
       ),
       child: Scaffold(
-        // Sử dụng CustomScrollView để làm hiệu ứng Header cuộn
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            _buildSliverAppBar(),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 20.0,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildGreetingSection(),
-                  const SizedBox(height: 24),
-                  _buildStatsGrid(),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Truy cập nhanh'),
-                  const SizedBox(height: 16),
-                  _buildQuickActionsGrid(),
-                  const SizedBox(height: 20), // Padding đáy
-                ]),
-              ),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF15171B), Color(0xFF08090B)],
             ),
-          ],
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      metrics.px(14),
+                      metrics.px(8),
+                      metrics.px(14),
+                      metrics.px(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTopBar(metrics),
+                        SizedBox(height: metrics.px(12)),
+                        _buildHeroBanner(metrics),
+                        SizedBox(height: metrics.px(12)),
+                        _buildStatsGrid(metrics),
+                        SizedBox(height: metrics.px(16)),
+                        _buildSectionTitle('• Hành Động Nhanh', metrics),
+                        SizedBox(height: metrics.px(10)),
+                        _buildQuickActionsGrid(metrics),
+                        SizedBox(height: metrics.px(14)),
+                        _buildSectionTitle('• Giao Dịch Gần Đây', metrics),
+                        SizedBox(height: metrics.px(10)),
+                        _buildRecentTransactions(metrics),
+                        SizedBox(height: metrics.px(8)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(),
-        extendBody: true, // Để thanh điều hướng trong suốt hơn
+        bottomNavigationBar: _buildBottomNavigationBar(metrics),
       ),
     );
   }
 
-  // ===========================================================================
-  // CÁC WIDGET THÀNH PHẦN (ĐƯỢC CHIA NHỎ THEO OOP)
-  // ===========================================================================
+  Widget _buildTopBar(_DashboardMetrics metrics) {
+    return SizedBox(
+      height: metrics.px(34),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildTopBarButton(
+              metrics: metrics,
+              icon: Icons.menu_rounded,
+              onTap: () => _showFeatureComingSoon('Menu đang được cập nhật.'),
+            ),
+          ),
+          Text(
+            'PRECISION',
+            style: AppTextStyles.titleLarge.copyWith(
+              color: const Color(0xFFE0B54E),
+              fontWeight: FontWeight.w700,
+              letterSpacing: metrics.px(2.5),
+              fontSize: metrics.fs(21.5),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTopBarButton(
+                  metrics: metrics,
+                  icon: Icons.notifications_none_rounded,
+                  onTap: _showNotifications,
+                ),
+                SizedBox(width: metrics.px(6)),
+                _buildTopBarButton(
+                  metrics: metrics,
+                  icon: Icons.person_outline_rounded,
+                  onTap: _handleLogout,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  /// 1. Header có ảnh 3D và thanh cuộn trong suốt
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 240.0,
-      pinned: true,
-      stretch: true,
-      backgroundColor: const Color(0xFF121212).withValues(alpha: 0.8),
-      elevation: 0,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-          onPressed: _showNotifications,
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout, color: Colors.white),
-          onPressed: _handleLogout,
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [StretchMode.zoomBackground],
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-        title: const Text(
-          'AutoFlux Dashboard',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-            shadows: [
-              Shadow(
-                color: Colors.black87,
-                offset: Offset(0, 2),
-                blurRadius: 4,
-              ),
-            ],
+  Widget _buildTopBarButton({
+    required _DashboardMetrics metrics,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkResponse(
+        onTap: onTap,
+        radius: metrics.px(20),
+        highlightShape: BoxShape.circle,
+        splashColor: Colors.white.withValues(alpha: 0.08),
+        child: SizedBox(
+          width: metrics.px(30),
+          height: metrics.px(30),
+          child: Icon(
+            icon,
+            color: Colors.white.withValues(alpha: 0.95),
+            size: metrics.px(20),
           ),
         ),
-        background: Stack(
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner(_DashboardMetrics metrics) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(metrics.px(18)),
+      child: SizedBox(
+        height: metrics.heroHeight,
+        child: Stack(
           fit: StackFit.expand,
           children: [
-            // Thay bằng ảnh xe 3D của bạn: Image.asset('assets/images/car_bg.png')
-            Image.network(
-              'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-              fit: BoxFit.cover,
-            ),
-            // Lớp phủ Gradient đen mờ từ dưới lên để chữ nổi bật
+            Image.asset('assets/images/MustangBg.webp', fit: BoxFit.cover),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.2),
-                    const Color(
-                      0xFF121212,
-                    ).withValues(alpha: 0.95), // Khớp với màu nền ở dưới
+                    Colors.black.withValues(alpha: 0.22),
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.87),
                   ],
-                  stops: const [0.0, 0.6, 1.0],
+                  stops: const [0.0, 0.58, 1.0],
                 ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                metrics.px(15),
+                metrics.px(14),
+                metrics.px(15),
+                metrics.px(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TỔNG QUAN HOẠT ĐỘNG',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: const Color(0xFFE0B54E),
+                      fontWeight: FontWeight.w700,
+                      fontSize: metrics.fs(10),
+                      letterSpacing: metrics.px(1.6),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Xin chào,\nAlex Sterling',
+                    style: AppTextStyles.displayMedium.copyWith(
+                      fontSize: metrics.fs(40),
+                      height: 0.93,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: metrics.px(7)),
+                  Text(
+                    'Hiệu suất showroom của bạn tăng 12% tuần này. Đây là dữ liệu thực tế của bạn.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: metrics.fs(11.2),
+                      height: 1.3,
+                      color: Colors.white.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -131,132 +230,367 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// 2. Lời chào
-  Widget _buildGreetingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Xin chào!',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+  Widget _buildSectionTitle(String title, _DashboardMetrics metrics) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: AppTextStyles.headlineMedium.copyWith(
+          fontSize: metrics.fs(14),
+          fontWeight: FontWeight.w700,
+          color: Colors.white.withValues(alpha: 0.92),
+          letterSpacing: metrics.px(-0.25),
+          height: 1,
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Chào mừng bạn đến với hệ thống quản lý bán xe',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 3. Tiêu đề các mục
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
       ),
     );
   }
 
-  /// 4. Lưới thống kê 4 ô
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
+  Widget _buildStatsGrid(_DashboardMetrics metrics) {
+    const stats = [
+      _DashboardStat(
+        title: 'Tổng xe',
+        value: '1.248',
+        trend: '+4%',
+        isPositive: true,
+        icon: Icons.directions_car_filled_outlined,
+        accentColor: Color(0xFF4792FF),
+      ),
+      _DashboardStat(
+        title: 'Xe đã bán',
+        value: '412',
+        trend: '+8.2%',
+        isPositive: true,
+        icon: Icons.sell_outlined,
+        accentColor: Color(0xFFE0B54E),
+      ),
+      _DashboardStat(
+        title: 'Trong kho',
+        value: '836',
+        trend: '-1.5%',
+        isPositive: false,
+        icon: Icons.inventory_2_outlined,
+        accentColor: Color(0xFFFF6B6B),
+      ),
+      _DashboardStat(
+        title: 'Tổng doanh thu',
+        value: '\$4.2M',
+        trend: '+14%',
+        isPositive: true,
+        icon: Icons.bar_chart_rounded,
+        accentColor: Color(0xFF1BC47D),
+      ),
+    ];
+
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.35, // Chỉnh tỷ lệ để ô nhìn vuông vắn hơn
-      children: [
-        const StatCard(
-          title: 'Tổng xe',
-          value: '156',
-          icon: Icons.directions_car_rounded,
-          iconColor: Color(0xFF5A84F1),
-          bgColor: Color(0xFF1E2746), // Xanh Navy tối
-        ),
-        const StatCard(
-          title: 'Đã bán',
-          value: '89',
-          icon: Icons.local_offer_rounded,
-          iconColor: Color(0xFF4EE08F),
-          bgColor: Color(0xFF1B3B2B), // Xanh Lục tối
-        ),
-        const StatCard(
-          title: 'Còn hàng',
-          value: '67',
-          icon: Icons.inventory_2_rounded,
-          iconColor: Color(0xFFFFB054),
-          bgColor: Color(0xFF4A3419), // Cam đất tối
-        ),
-        const StatCard(
-          title: 'Doanh thu',
-          value: '12.5 tỷ',
-          icon: Icons.monetization_on_rounded,
-          iconColor: Color(0xFFD27DFF),
-          bgColor: Color(0xFF3B2045), // Tím tối
-        ),
-      ],
-    );
-  }
-
-  /// 5. Lưới thao tác nhanh
-  Widget _buildQuickActionsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.1,
-      children: [
-        const ActionCard(
-          title: 'Quản lý xe',
-          icon: Icons.directions_car_rounded,
-          color: Colors.blueAccent,
-        ),
-        const ActionCard(
-          title: 'Bán hàng',
-          icon: Icons.point_of_sale_rounded,
-          color: Colors.greenAccent,
-        ),
-        const ActionCard(
-          title: 'Thêm xe mới',
-          icon: Icons.add_circle_rounded,
-          color: Colors.orangeAccent,
-        ),
-        const ActionCard(
-          title: 'Báo cáo',
-          icon: Icons.bar_chart_rounded,
-          color: Colors.purpleAccent,
-        ),
-      ],
-    );
-  }
-
-  /// 6. Thanh điều hướng dưới cùng
-  Widget _buildBottomNavigationBar() {
-    return BubbleNavBar(
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        setState(() => _selectedIndex = index);
+      itemCount: stats.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: metrics.gridSpacing,
+        crossAxisSpacing: metrics.gridSpacing,
+        childAspectRatio: metrics.statsAspectRatio,
+      ),
+      itemBuilder: (context, index) {
+        final stat = stats[index];
+        return StatCard(
+          title: stat.title,
+          value: stat.value,
+          trend: stat.trend,
+          isPositive: stat.isPositive,
+          icon: stat.icon,
+          accentColor: stat.accentColor,
+          uiScale: metrics.scale,
+          textScale: metrics.fontScale,
+        );
       },
     );
   }
 
-  // ===========================================================================
-  // CÁC HÀM XỬ LÝ SỰ KIỆN (Mock)
-  // ===========================================================================
+  Widget _buildQuickActionsGrid(_DashboardMetrics metrics) {
+    final actions = [
+      _QuickActionItem(
+        title: 'Thêm xe mới',
+        icon: Icons.add_circle_outline_rounded,
+        onTap: () => context.go(RouteNames.addCar),
+      ),
+      _QuickActionItem(
+        title: 'Tạo hóa đơn',
+        icon: Icons.attach_money_rounded,
+        onTap: () => context.go(RouteNames.sales),
+      ),
+      _QuickActionItem(
+        title: 'Kho hàng',
+        icon: Icons.inventory_2_outlined,
+        onTap: () => context.go(RouteNames.carList),
+      ),
+      _QuickActionItem(
+        title: 'Báo cáo',
+        icon: Icons.pie_chart_outline_rounded,
+        onTap: () =>
+            _showFeatureComingSoon('Mục báo cáo sẽ có trong bản cập nhật tới.'),
+      ),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: actions.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: metrics.gridSpacing,
+        crossAxisSpacing: metrics.gridSpacing,
+        childAspectRatio: metrics.actionsAspectRatio,
+      ),
+      itemBuilder: (context, index) {
+        final action = actions[index];
+        return ActionCard(
+          title: action.title,
+          icon: action.icon,
+          accentColor: const Color(0xFFE0B54E),
+          onTap: action.onTap,
+          uiScale: metrics.scale,
+          textScale: metrics.fontScale,
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentTransactions(_DashboardMetrics metrics) {
+    const transactions = [
+      _RecentTransaction(
+        customerName: 'Nguyễn Văn A',
+        carName: 'Toyota Camry 2024',
+        amount: '1.2 tỷ',
+        timeAgo: '2 giờ trước',
+      ),
+      _RecentTransaction(
+        customerName: 'Trần Thị B',
+        carName: 'Honda CR-V 2024',
+        amount: '990 triệu',
+        timeAgo: '5 giờ trước',
+      ),
+      _RecentTransaction(
+        customerName: 'Lê Văn C',
+        carName: 'Mazda CX-5 2024',
+        amount: '880 triệu',
+        timeAgo: 'Hôm qua',
+      ),
+    ];
+
+    return Column(
+      children: transactions
+          .map(
+            (transaction) => _buildRecentTransactionItem(transaction, metrics),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildRecentTransactionItem(
+    _RecentTransaction transaction,
+    _DashboardMetrics metrics,
+  ) {
+    final initials = transaction.customerName.substring(0, 1).toUpperCase();
+
+    return Container(
+      margin: EdgeInsets.only(bottom: metrics.px(8)),
+      padding: EdgeInsets.fromLTRB(
+        metrics.px(12),
+        metrics.px(10),
+        metrics.px(12),
+        metrics.px(10),
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1C20),
+        borderRadius: BorderRadius.circular(metrics.px(16)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: metrics.px(19),
+            backgroundColor: const Color(0xFFE0B54E),
+            child: Text(
+              initials,
+              style: AppTextStyles.titleMedium.copyWith(
+                color: const Color(0xFF1A1A1A),
+                fontWeight: FontWeight.w700,
+                fontSize: metrics.fs(17),
+              ),
+            ),
+          ),
+          SizedBox(width: metrics.px(10)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction.customerName,
+                  style: AppTextStyles.titleSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: metrics.fs(14.5),
+                  ),
+                ),
+                SizedBox(height: metrics.px(1)),
+                Text(
+                  transaction.carName,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontSize: metrics.fs(11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                transaction.amount,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: const Color(0xFF1BC47D),
+                  fontWeight: FontWeight.w700,
+                  fontSize: metrics.fs(14),
+                ),
+              ),
+              SizedBox(height: metrics.px(1)),
+              Text(
+                transaction.timeAgo,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: metrics.fs(10.5),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar(_DashboardMetrics metrics) {
+    const navItems = [
+      _DashboardNavItem(icon: Icons.home_outlined, label: 'Trang Chủ'),
+      _DashboardNavItem(icon: Icons.storefront_outlined, label: 'Mall'),
+      _DashboardNavItem(
+        icon: Icons.notifications_none_rounded,
+        label: 'Thông Báo',
+      ),
+      _DashboardNavItem(icon: Icons.person_outline_rounded, label: 'Tôi'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF121316),
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.06),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            metrics.px(4),
+            metrics.px(7),
+            metrics.px(4),
+            metrics.px(8),
+          ),
+          child: Row(
+            children: List.generate(navItems.length, (index) {
+              final item = navItems[index];
+              final isSelected = _selectedIndex == index;
+
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(metrics.px(12)),
+                  onTap: () => _onBottomTabSelected(index),
+                  child: AnimatedContainer(
+                    duration: AppConstants.shortDuration,
+                    padding: EdgeInsets.symmetric(vertical: metrics.px(7)),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF191B1F)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(metrics.px(10)),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFE0B54E).withValues(alpha: 0.9)
+                            : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.icon,
+                          size: metrics.px(19),
+                          color: isSelected
+                              ? const Color(0xFFE0B54E)
+                              : Colors.white.withValues(alpha: 0.68),
+                        ),
+                        SizedBox(height: metrics.px(3)),
+                        Text(
+                          item.label,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            fontSize: metrics.fs(10),
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? const Color(0xFFE0B54E)
+                                : Colors.white.withValues(alpha: 0.62),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onBottomTabSelected(int index) {
+    if (index == _selectedIndex) {
+      return;
+    }
+
+    switch (index) {
+      case 0:
+        setState(() => _selectedIndex = index);
+        return;
+      case 1:
+        context.go(RouteNames.sales);
+        return;
+      case 2:
+        _showNotifications();
+        return;
+      case 3:
+        _showFeatureComingSoon('Trang cá nhân sẽ sớm được cập nhật.');
+        return;
+    }
+  }
+
+  void _showFeatureComingSoon(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   void _showNotifications() {
     ScaffoldMessenger.of(
       context,
@@ -289,5 +623,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context.go(RouteNames.login);
       }
     }
+  }
+}
+
+class _DashboardStat {
+  final String title;
+  final String value;
+  final String trend;
+  final bool isPositive;
+  final IconData icon;
+  final Color accentColor;
+
+  const _DashboardStat({
+    required this.title,
+    required this.value,
+    required this.trend,
+    required this.isPositive,
+    required this.icon,
+    required this.accentColor,
+  });
+}
+
+class _QuickActionItem {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _QuickActionItem({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+}
+
+class _RecentTransaction {
+  final String customerName;
+  final String carName;
+  final String amount;
+  final String timeAgo;
+
+  const _RecentTransaction({
+    required this.customerName,
+    required this.carName,
+    required this.amount,
+    required this.timeAgo,
+  });
+}
+
+class _DashboardNavItem {
+  final IconData icon;
+  final String label;
+
+  const _DashboardNavItem({required this.icon, required this.label});
+}
+
+class _DashboardMetrics {
+  final double screenWidth;
+  final double scale;
+  final double fontScale;
+
+  const _DashboardMetrics._({
+    required this.screenWidth,
+    required this.scale,
+    required this.fontScale,
+  });
+
+  factory _DashboardMetrics.fromWidth(double width) {
+    final rawScale = width / 390;
+
+    return _DashboardMetrics._(
+      screenWidth: width,
+      scale: rawScale.clamp(0.88, 1.12).toDouble(),
+      fontScale: rawScale.clamp(0.92, 1.08).toDouble(),
+    );
+  }
+
+  bool get isCompact => screenWidth < 370;
+
+  bool get isWide => screenWidth >= 430;
+
+  double px(double value) => value * scale;
+
+  double fs(double value) => value * fontScale;
+
+  double get heroHeight => px(214).clamp(196, 246).toDouble();
+
+  double get gridSpacing => px(10).clamp(8, 12).toDouble();
+
+  double get statsAspectRatio {
+    if (isCompact) {
+      return 1.16;
+    }
+    if (isWide) {
+      return 1.33;
+    }
+    return 1.24;
+  }
+
+  double get actionsAspectRatio {
+    if (isCompact) {
+      return 1.32;
+    }
+    if (isWide) {
+      return 1.56;
+    }
+    return 1.44;
   }
 }
