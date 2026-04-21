@@ -574,7 +574,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _selectedIndex = index);
         return;
       case 1:
-        context.go(RouteNames.sales);
+        context.go(RouteNames.mall);
         return;
       case 2:
         _showNotifications();
