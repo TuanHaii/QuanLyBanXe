@@ -11,11 +11,9 @@ class ProfileSecurityScreen extends StatefulWidget {
 }
 
 class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
-  static const Color _backgroundColor = Color(0xFF07080A);
-  static const Color _surfaceColor = Color(0xFF16181D);
-  static const Color _surfaceSoftColor = Color(0xFF1A1D22);
-  static const Color _accentColor = Color(0xFFD8AD48);
-  static const Color _tealAccentColor = Color(0xFF09B7A3);
+  _ProfileSecurityPalette _palette(BuildContext context) {
+    return _ProfileSecurityPalette.fromTheme(Theme.of(context));
+  }
 
   final TextEditingController _currentPasswordController =
       TextEditingController();
@@ -53,9 +51,10 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
     final metrics = _ProfileSecurityMetrics.fromWidth(
       MediaQuery.sizeOf(context).width,
     );
+    final palette = _palette(context);
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: palette.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -63,18 +62,18 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
         title: Text(
           'Bảo Mật',
           style: AppTextStyles.titleLarge.copyWith(
-            color: Colors.white,
+            color: palette.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: metrics.fs(20),
           ),
         ),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF14161A), Color(0xFF060709)],
+            colors: [palette.gradientTop, palette.gradientBottom],
           ),
         ),
         child: SafeArea(
@@ -107,8 +106,8 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                   child: FilledButton.icon(
                     onPressed: _saveSecurityChanges,
                     style: FilledButton.styleFrom(
-                      backgroundColor: _accentColor,
-                      foregroundColor: const Color(0xFF1A1710),
+                      backgroundColor: palette.accent,
+                      foregroundColor: palette.buttonForeground,
                       padding: EdgeInsets.symmetric(vertical: metrics.px(14)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(metrics.px(14)),
@@ -121,7 +120,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                     label: Text(
                       'Cập Nhật Bảo Mật',
                       style: AppTextStyles.titleSmall.copyWith(
-                        color: const Color(0xFF1A1710),
+                        color: palette.buttonForeground,
                         fontWeight: FontWeight.w800,
                         fontSize: metrics.fs(16),
                       ),
@@ -133,7 +132,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                   child: Text(
                     'Phiên bản ${AppConstants.appVersion} - Precision Auto',
                     style: AppTextStyles.labelMedium.copyWith(
-                      color: Colors.white.withValues(alpha: 0.42),
+                      color: palette.textMuted,
                       fontSize: metrics.fs(11),
                     ),
                   ),
@@ -147,10 +146,12 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
   }
 
   Widget _buildSectionTitle(String text, _ProfileSecurityMetrics metrics) {
+    final palette = _palette(context);
+
     return Text(
       text,
       style: AppTextStyles.labelLarge.copyWith(
-        color: Colors.white.withValues(alpha: 0.55),
+        color: palette.textMuted,
         letterSpacing: metrics.px(1.05),
         fontWeight: FontWeight.w700,
         fontSize: metrics.fs(13),
@@ -159,11 +160,13 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
   }
 
   Widget _buildSwitchCard(_ProfileSecurityMetrics metrics) {
+    final palette = _palette(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(17)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         children: [
@@ -176,7 +179,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
             onChanged: (value) => setState(() => _twoFactorEnabled = value),
           ),
           Divider(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: palette.divider,
             height: 1,
             indent: metrics.px(13),
             endIndent: metrics.px(13),
@@ -202,6 +205,8 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final palette = _palette(context);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         metrics.px(12),
@@ -216,11 +221,11 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
             width: metrics.px(30),
             height: metrics.px(30),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: palette.iconContainer,
               borderRadius: BorderRadius.circular(metrics.px(9)),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, color: _accentColor, size: metrics.px(16)),
+            child: Icon(icon, color: palette.accent, size: metrics.px(16)),
           ),
           SizedBox(width: metrics.px(9)),
           Expanded(
@@ -230,7 +235,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                 Text(
                   title,
                   style: AppTextStyles.titleSmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.95),
+                    color: palette.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(15),
                   ),
@@ -239,7 +244,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                 Text(
                   subtitle,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: palette.textSecondary,
                     fontSize: metrics.fs(12),
                   ),
                 ),
@@ -250,8 +255,8 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
           _DualToneSwitch(
             value: value,
             onChanged: onChanged,
-            accentColor: _accentColor,
-            tealAccentColor: _tealAccentColor,
+            accentColor: palette.accent,
+            tealAccentColor: palette.tealAccent,
           ),
         ],
       ),
@@ -259,11 +264,13 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
   }
 
   Widget _buildPasswordCard(_ProfileSecurityMetrics metrics) {
+    final palette = _palette(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(17)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         children: [
@@ -314,6 +321,8 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
     required bool obscureText,
     required VoidCallback onToggle,
   }) {
+    final palette = _palette(context);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         metrics.px(12),
@@ -325,43 +334,43 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
         controller: controller,
         obscureText: obscureText,
         style: AppTextStyles.bodyMedium.copyWith(
-          color: Colors.white,
+          color: palette.textPrimary,
           fontSize: metrics.fs(14),
         ),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: AppTextStyles.bodySmall.copyWith(
-            color: Colors.white.withValues(alpha: 0.58),
+            color: palette.textSecondary,
             fontSize: metrics.fs(12),
           ),
-          prefixIcon: Icon(icon, color: _accentColor, size: metrics.px(18)),
+          prefixIcon: Icon(icon, color: palette.accent, size: metrics.px(18)),
           suffixIcon: IconButton(
             onPressed: onToggle,
             icon: Icon(
               obscureText
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: Colors.white.withValues(alpha: 0.62),
+              color: palette.textSecondary,
               size: metrics.px(18),
             ),
           ),
           filled: true,
-          fillColor: _surfaceSoftColor,
+          fillColor: palette.surfaceSoft,
           contentPadding: EdgeInsets.symmetric(
             horizontal: metrics.px(12),
             vertical: metrics.px(12),
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(metrics.px(12)),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            borderSide: BorderSide(color: palette.cardBorder),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(metrics.px(12)),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            borderSide: BorderSide(color: palette.cardBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(metrics.px(12)),
-            borderSide: const BorderSide(color: _accentColor, width: 1.1),
+            borderSide: BorderSide(color: palette.accent, width: 1.1),
           ),
         ),
       ),
@@ -369,6 +378,8 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
   }
 
   Widget _buildSessionCard(_ProfileSecurityMetrics metrics) {
+    final palette = _palette(context);
+
     const sessions = [
       _SessionItem(
         device: 'iPhone 15 Pro - iOS 18',
@@ -392,9 +403,9 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(17)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         children: List.generate(sessions.length, (index) {
@@ -410,20 +421,20 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                   width: metrics.px(32),
                   height: metrics.px(32),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
+                    color: palette.iconContainer,
                     borderRadius: BorderRadius.circular(metrics.px(10)),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     Icons.devices_outlined,
-                    color: _accentColor,
+                    color: palette.accent,
                     size: metrics.px(17),
                   ),
                 ),
                 title: Text(
                   session.device,
                   style: AppTextStyles.titleSmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.94),
+                    color: palette.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(14),
                   ),
@@ -433,7 +444,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                   child: Text(
                     '${session.location} • ${session.lastSeen}',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.58),
+                      color: palette.textSecondary,
                       fontSize: metrics.fs(12),
                     ),
                   ),
@@ -445,13 +456,13 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                           vertical: metrics.px(4),
                         ),
                         decoration: BoxDecoration(
-                          color: _tealAccentColor.withValues(alpha: 0.18),
+                          color: palette.tealAccent.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           'Hiện tại',
                           style: AppTextStyles.labelSmall.copyWith(
-                            color: _tealAccentColor,
+                            color: palette.tealAccent,
                             fontWeight: FontWeight.w700,
                             fontSize: metrics.fs(10),
                           ),
@@ -461,7 +472,7 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
               ),
               if (index != sessions.length - 1)
                 Divider(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: palette.divider,
                   height: 1,
                   indent: metrics.px(13),
                   endIndent: metrics.px(13),
@@ -470,6 +481,70 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
           );
         }),
       ),
+    );
+  }
+}
+
+class _ProfileSecurityPalette {
+  final Color background;
+  final Color gradientTop;
+  final Color gradientBottom;
+  final Color surface;
+  final Color surfaceSoft;
+  final Color accent;
+  final Color tealAccent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color cardBorder;
+  final Color divider;
+  final Color iconContainer;
+  final Color buttonForeground;
+
+  const _ProfileSecurityPalette({
+    required this.background,
+    required this.gradientTop,
+    required this.gradientBottom,
+    required this.surface,
+    required this.surfaceSoft,
+    required this.accent,
+    required this.tealAccent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.cardBorder,
+    required this.divider,
+    required this.iconContainer,
+    required this.buttonForeground,
+  });
+
+  factory _ProfileSecurityPalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return _ProfileSecurityPalette(
+      background: isDark ? const Color(0xFF07080A) : const Color(0xFFF4F7FB),
+      gradientTop: isDark ? const Color(0xFF14161A) : const Color(0xFFFBFCFF),
+      gradientBottom: isDark
+          ? const Color(0xFF060709)
+          : const Color(0xFFEEF2F8),
+      surface: isDark ? const Color(0xFF16181D) : Colors.white,
+      surfaceSoft: isDark ? const Color(0xFF1A1D22) : const Color(0xFFF2F5FA),
+      accent: const Color(0xFFD8AD48),
+      tealAccent: const Color(0xFF09B7A3),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.65 : 0.7),
+      textMuted: onSurface.withValues(alpha: isDark ? 0.52 : 0.58),
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.08),
+      divider: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.black.withValues(alpha: 0.06),
+      iconContainer: isDark
+          ? Colors.white.withValues(alpha: 0.03)
+          : Colors.black.withValues(alpha: 0.03),
+      buttonForeground: const Color(0xFF1A1710),
     );
   }
 }
@@ -489,6 +564,8 @@ class _DualToneSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => onChanged(!value),
@@ -504,7 +581,9 @@ class _DualToneSwitch extends StatelessWidget {
             end: Alignment.centerRight,
             colors: value
                 ? [accentColor, tealAccentColor]
-                : [const Color(0xFF42464E), const Color(0xFF2E3138)],
+                : isDark
+                    ? [const Color(0xFF42464E), const Color(0xFF2E3138)]
+                    : [const Color(0xFFD8DEE7), const Color(0xFFC6D0DD)],
           ),
         ),
         child: AnimatedAlign(
@@ -515,10 +594,14 @@ class _DualToneSwitch extends StatelessWidget {
             height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: value ? const Color(0xFFF5F7FA) : const Color(0xFF9CA3AF),
+              color: value
+                  ? (isDark ? const Color(0xFFF5F7FA) : Colors.white)
+                  : (isDark
+                        ? const Color(0xFF9CA3AF)
+                        : const Color(0xFF7B8794)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.12),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),

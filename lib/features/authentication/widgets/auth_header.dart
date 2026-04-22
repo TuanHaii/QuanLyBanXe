@@ -5,30 +5,33 @@ class AuthHeader extends StatelessWidget {
     super.key});
   @override
   Widget build(BuildContext context){
+    final colorScheme = Theme.of(context).colorScheme;
+    final onSurface = colorScheme.onSurface;
+
     return Column(
       children: [
         // icon logo boc trong hinh vuong bo goc
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFC5D1E0),
+            color: colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(22),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.precision_manufacturing_outlined,
             size: 40,
-            color: Color(0xFF12141A),
+            color: colorScheme.onPrimaryContainer,
           ),
         ),
         const SizedBox(height: 24),
         
         // chữ precision có khoảng rộng
-        const Text(
+        Text(
           'P R E C I S I O N',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: onSurface,
             letterSpacing: 6.0, // Tăng khoảng cách giữa các chữ cái
           ),
         ), 
@@ -39,7 +42,7 @@ class AuthHeader extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha:0.7),
+            color: onSurface.withValues(alpha:0.7),
             letterSpacing: 2.0, // Tăng khoảng cách giữa các chữ cái
           ),
         )

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../authentication/services/auth_service.dart';
+import '../../authentication/models/user_model.dart';
 import '../../../shared/constants/app_constants.dart';
 import '../../../shared/services/service_locator.dart';
 import '../../../shared/services/theme_service.dart';
 import '../../../shared/themes/app_colors.dart';
+import '../../dashboard/models/dashboard_summary_model.dart';
+import '../../dashboard/services/dashboard_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,14 +18,17 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const Color _backgroundColor = Color(0xFF07080A);
-  static const Color _surfaceColor = Color(0xFF16181D);
-  static const Color _surfaceColorSoft = Color(0xFF1A1D22);
-  static const Color _accentColor = Color(0xFFD8AD48);
-  static const Color _tealAccentColor = Color(0xFF09B7A3);
-
   late final ThemeService _themeService;
+  late final AuthService _authService;
+  late final DashboardService _dashboardService;
   bool _isApplyingTheme = false;
+
+  UserModel? _user;
+  DashboardSummaryModel? _summary;
+
+  _ProfilePalette _palette(BuildContext context) {
+    return _ProfilePalette.fromTheme(Theme.of(context));
+  }
 
   bool get _darkModeEnabled => _themeService.darkModeEnabled;
 
@@ -32,7 +38,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _themeService = getIt<ThemeService>();
+    _authService = getIt<AuthService>();
+    _dashboardService = getIt<DashboardService>();
     _themeService.addListener(_handleThemeServiceChanged);
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    setState(() {
+      _user = _authService.currentUser;
+    });
+
+    try {
+      final summary = await _dashboardService.fetchDashboardSummary();
+      if (!mounted) return;
+      setState(() => _summary = summary);
+    } catch (_) {
+      // Silently ignore - stats will show fallback values
+    }
   }
 
   @override
@@ -112,18 +135,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleLogout() async {
+    final palette = _palette(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1D22),
+        backgroundColor: palette.dialogBackground,
         title: const Text('Đăng xuất'),
         content: const Text('Bạn có chắc muốn đăng xuất khỏi hệ thống?'),
         titleTextStyle: AppTextStyles.titleLarge.copyWith(
-          color: Colors.white,
+          color: palette.textPrimary,
           fontWeight: FontWeight.w700,
         ),
         contentTextStyle: AppTextStyles.bodyMedium.copyWith(
-          color: Colors.white.withValues(alpha: 0.74),
+          color: palette.textSecondary,
         ),
         actions: [
           TextButton(
@@ -131,13 +156,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               'Hủy',
               style: AppTextStyles.labelLarge.copyWith(
-                color: Colors.white.withValues(alpha: 0.82),
+                color: palette.textSecondary,
               ),
             ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD64545),
+              backgroundColor: palette.logoutForeground,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
@@ -159,15 +184,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final metrics = _ProfileMetrics.fromWidth(MediaQuery.sizeOf(context).width);
+    final palette = _palette(context);
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: palette.background,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF14161A), Color(0xFF060709)],
+            colors: [palette.gradientTop, palette.gradientBottom],
           ),
         ),
         child: SafeArea(
@@ -195,12 +221,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileActionItem(
                       icon: Icons.person_outline_rounded,
                       title: 'Thông Tin Cá Nhân',
-                      onTap: () => context.go(RouteNames.profileInfo),
+                      onTap: () => context.push(RouteNames.profileInfo),
                     ),
                     _ProfileActionItem(
                       icon: Icons.shield_outlined,
                       title: 'Bảo Mật',
-                      onTap: () => context.go(RouteNames.profileSecurity),
+                      onTap: () => context.push(RouteNames.profileSecurity),
                     ),
                     _ProfileActionItem(
                       icon: Icons.notifications_none_rounded,
@@ -229,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileActionItem(
                       icon: Icons.history_rounded,
                       title: 'Lịch Sử Giao Dịch',
-                      onTap: () => context.go(RouteNames.profileHistory),
+                      onTap: () => context.push(RouteNames.profileHistory),
                     ),
                     _ProfileActionItem(
                       icon: Icons.track_changes_outlined,
@@ -276,7 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Text(
                     'Phiên bản ${AppConstants.appVersion} - Precision Auto',
                     style: AppTextStyles.labelMedium.copyWith(
-                      color: Colors.white.withValues(alpha: 0.42),
+                      color: palette.textMuted,
                       fontSize: metrics.fs(11),
                     ),
                   ),
@@ -292,6 +318,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(_ProfileMetrics metrics) {
+    final palette = _palette(context);
+
     return Center(
       child: Column(
         children: [
@@ -310,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _accentColor.withValues(alpha: 0.23),
+                  color: palette.accent.withValues(alpha: 0.23),
                   blurRadius: 22,
                   offset: const Offset(0, 10),
                 ),
@@ -318,7 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             alignment: Alignment.center,
             child: Text(
-              'A',
+              (_user?.name ?? 'Người dùng').substring(0, 1).toUpperCase(),
               style: AppTextStyles.headlineMedium.copyWith(
                 color: const Color(0xFF17150F),
                 fontWeight: FontWeight.w800,
@@ -328,9 +356,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SizedBox(height: metrics.px(12)),
           Text(
-            'Alex Sterling',
+            _user?.name ?? 'Người dùng',
             style: AppTextStyles.headlineSmall.copyWith(
-              color: Colors.white,
+              color: palette.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: metrics.fs(32),
               height: 1,
@@ -338,9 +366,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SizedBox(height: metrics.px(4)),
           Text(
-            'Giám Đốc Kinh Doanh',
+            _roleLabel,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: palette.textSecondary,
               fontSize: metrics.fs(16),
             ),
           ),
@@ -351,23 +379,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               vertical: metrics.px(5),
             ),
             decoration: BoxDecoration(
-              color: _surfaceColorSoft,
+              color: palette.surfaceSoft,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _accentColor.withValues(alpha: 0.28)),
+              border: Border.all(color: palette.accent.withValues(alpha: 0.28)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.star_border_rounded,
-                  color: _accentColor,
+                  color: palette.accent,
                   size: metrics.px(14),
                 ),
                 SizedBox(width: metrics.px(6)),
                 Text(
                   'Nhân Viên Xuất Sắc',
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: _accentColor,
+                    color: palette.accent,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(12),
                   ),
@@ -380,22 +408,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String get _roleLabel {
+    final role = _user?.role?.toLowerCase() ?? '';
+    switch (role) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'manager':
+        return 'Giám Đốc Kinh Doanh';
+      case 'user':
+        return 'Nhân viên';
+      default:
+        return 'Nhân viên';
+    }
+  }
+
   Widget _buildStats(_ProfileMetrics metrics) {
-    const stats = [
+    final stats = [
       _ProfileStatData(
         icon: Icons.attach_money_rounded,
-        value: '124',
+        value: _summary != null ? '${_summary!.carsSold}' : '--',
         label: 'Xe Đã Bán',
       ),
       _ProfileStatData(
         icon: Icons.trending_up_rounded,
-        value: '\$4.2M',
+        value: _summary?.totalRevenueLabel ?? '--',
         label: 'Doanh Thu',
       ),
       _ProfileStatData(
         icon: Icons.groups_2_outlined,
-        value: '98',
-        label: 'Khách Hàng',
+        value: _summary != null ? '${_summary!.inStock}' : '--',
+        label: 'Trong Kho',
       ),
     ];
 
@@ -420,6 +462,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required _ProfileMetrics metrics,
     required _ProfileStatData stat,
   }) {
+    final palette = _palette(context);
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         metrics.px(11),
@@ -428,19 +472,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         metrics.px(10),
       ),
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(14)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(stat.icon, color: _accentColor, size: metrics.px(15)),
+          Icon(stat.icon, color: palette.accent, size: metrics.px(15)),
           SizedBox(height: metrics.px(5)),
           Text(
             stat.value,
             style: AppTextStyles.titleLarge.copyWith(
-              color: Colors.white,
+              color: palette.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: metrics.fs(25),
               height: 1,
@@ -450,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             stat.label,
             style: AppTextStyles.labelMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.52),
+              color: palette.textMuted,
               fontSize: metrics.fs(11),
             ),
           ),
@@ -460,10 +504,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSectionTitle(String text, _ProfileMetrics metrics) {
+    final palette = _palette(context);
+
     return Text(
       text,
       style: AppTextStyles.labelLarge.copyWith(
-        color: Colors.white.withValues(alpha: 0.55),
+        color: palette.textSecondary,
         letterSpacing: metrics.px(1.05),
         fontWeight: FontWeight.w700,
         fontSize: metrics.fs(13),
@@ -475,11 +521,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required _ProfileMetrics metrics,
     required List<_ProfileActionItem> items,
   }) {
+    final palette = _palette(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(17)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         children: List.generate(items.length, (index) {
@@ -495,7 +543,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (index != items.length - 1)
                 Divider(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: palette.divider,
                   height: 1,
                   indent: metrics.px(13),
                   endIndent: metrics.px(13),
@@ -508,11 +556,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDisplayGroup(_ProfileMetrics metrics) {
+    final palette = _palette(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(17)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         children: [
@@ -524,7 +574,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onChanged: _onDarkModeChanged,
           ),
           Divider(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: palette.divider,
             height: 1,
             indent: metrics.px(13),
             endIndent: metrics.px(13),
@@ -547,6 +597,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String title,
     required VoidCallback onTap,
   }) {
+    final palette = _palette(context);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -565,7 +617,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Text(
                   title,
                   style: AppTextStyles.titleSmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.94),
+                    color: palette.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(15),
                   ),
@@ -574,7 +626,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Icon(
                 Icons.chevron_right_rounded,
                 size: metrics.px(19),
-                color: Colors.white.withValues(alpha: 0.38),
+                color: palette.textMuted,
               ),
             ],
           ),
@@ -590,6 +642,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final palette = _palette(context);
+
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: metrics.px(12),
@@ -603,7 +657,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               title,
               style: AppTextStyles.titleSmall.copyWith(
-                color: Colors.white.withValues(alpha: 0.94),
+                color: palette.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: metrics.fs(15),
               ),
@@ -612,8 +666,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _DualToneSwitch(
             value: value,
             onChanged: _isApplyingTheme ? null : onChanged,
-            accentColor: _accentColor,
-            tealAccentColor: _tealAccentColor,
+            accentColor: palette.accent,
+            tealAccentColor: palette.tealAccent,
           ),
         ],
       ),
@@ -621,40 +675,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildLeadingIcon(IconData icon, _ProfileMetrics metrics) {
+    final palette = _palette(context);
+
     return Container(
       width: metrics.px(30),
       height: metrics.px(30),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: palette.iconContainer,
         borderRadius: BorderRadius.circular(metrics.px(9)),
       ),
       alignment: Alignment.center,
-      child: Icon(icon, color: _accentColor, size: metrics.px(16)),
+      child: Icon(icon, color: palette.accent, size: metrics.px(16)),
     );
   }
 
   Widget _buildLogoutButton(_ProfileMetrics metrics) {
+    final palette = _palette(context);
+
     return SizedBox(
       width: double.infinity,
       child: FilledButton.icon(
         onPressed: _handleLogout,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF32131A),
-          foregroundColor: const Color(0xFFF25A65),
+          backgroundColor: palette.logoutBackground,
+          foregroundColor: palette.logoutForeground,
           elevation: 0,
           padding: EdgeInsets.symmetric(vertical: metrics.px(14)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(metrics.px(14)),
-            side: BorderSide(
-              color: const Color(0xFFB6424A).withValues(alpha: 0.44),
-            ),
+            side: BorderSide(color: palette.logoutBorder),
           ),
         ),
         icon: const Icon(Icons.logout_rounded, size: 18),
         label: Text(
           'Đăng Xuất',
           style: AppTextStyles.titleSmall.copyWith(
-            color: const Color(0xFFF25A65),
+            color: palette.logoutForeground,
             fontWeight: FontWeight.w700,
             fontSize: metrics.fs(16),
           ),
@@ -664,6 +720,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildBottomNavigationBar(_ProfileMetrics metrics) {
+    final palette = _palette(context);
+
     const navItems = [
       _ProfileNavItem(icon: Icons.home_outlined, label: 'Trang Chủ'),
       _ProfileNavItem(icon: Icons.shopping_bag_outlined, label: 'Mall'),
@@ -676,12 +734,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF111317),
+        color: palette.bottomNavBackground,
         border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
-            width: 1,
-          ),
+          top: BorderSide(color: palette.bottomNavBorder, width: 1),
         ),
       ),
       child: SafeArea(
@@ -708,12 +763,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: EdgeInsets.symmetric(vertical: metrics.px(8)),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF191B1F)
+                          ? palette.bottomNavSelectedBackground
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(metrics.px(11)),
                       border: Border.all(
                         color: isSelected
-                            ? _accentColor.withValues(alpha: 0.78)
+                            ? palette.bottomNavSelectedBorder
                             : Colors.transparent,
                       ),
                     ),
@@ -724,16 +779,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           item.icon,
                           size: metrics.px(19),
                           color: isSelected
-                              ? _accentColor
-                              : Colors.white.withValues(alpha: 0.68),
+                              ? palette.accent
+                              : palette.navUnselected,
                         ),
                         SizedBox(height: metrics.px(3)),
                         Text(
                           item.label,
                           style: AppTextStyles.labelSmall.copyWith(
                             color: isSelected
-                                ? _accentColor
-                                : Colors.white.withValues(alpha: 0.62),
+                                ? palette.accent
+                                : palette.navUnselected,
                             fontWeight: isSelected
                                 ? FontWeight.w700
                                 : FontWeight.w500,
@@ -768,6 +823,17 @@ class _DualToneSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final disabledTrackColors = isDark
+        ? const [Color(0xFF363942), Color(0xFF2A2C33)]
+        : const [Color(0xFFE1E6EE), Color(0xFFD5DCE8)];
+    final offTrackColors = isDark
+        ? const [Color(0xFF42464E), Color(0xFF2E3138)]
+        : const [Color(0xFFDCE2EB), Color(0xFFCAD3E0)];
+    final thumbColor = value
+        ? (isDark ? const Color(0xFFF5F7FA) : Colors.white)
+        : (isDark ? const Color(0xFF9CA3AF) : const Color(0xFF7D8896));
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onChanged == null ? null : () => onChanged!(!value),
@@ -782,10 +848,10 @@ class _DualToneSwitch extends StatelessWidget {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: onChanged == null
-                ? [const Color(0xFF363942), const Color(0xFF2A2C33)]
+                ? disabledTrackColors
                 : value
                 ? [accentColor, tealAccentColor]
-                : [const Color(0xFF42464E), const Color(0xFF2E3138)],
+                : offTrackColors,
           ),
         ),
         child: AnimatedAlign(
@@ -796,10 +862,10 @@ class _DualToneSwitch extends StatelessWidget {
             height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: value ? const Color(0xFFF5F7FA) : const Color(0xFF9CA3AF),
+              color: thumbColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.12),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -808,6 +874,106 @@ class _DualToneSwitch extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfilePalette {
+  final Color background;
+  final Color gradientTop;
+  final Color gradientBottom;
+  final Color surface;
+  final Color surfaceSoft;
+  final Color accent;
+  final Color tealAccent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color cardBorder;
+  final Color divider;
+  final Color iconContainer;
+  final Color bottomNavBackground;
+  final Color bottomNavBorder;
+  final Color bottomNavSelectedBackground;
+  final Color bottomNavSelectedBorder;
+  final Color navUnselected;
+  final Color logoutBackground;
+  final Color logoutForeground;
+  final Color logoutBorder;
+  final Color dialogBackground;
+
+  const _ProfilePalette({
+    required this.background,
+    required this.gradientTop,
+    required this.gradientBottom,
+    required this.surface,
+    required this.surfaceSoft,
+    required this.accent,
+    required this.tealAccent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.cardBorder,
+    required this.divider,
+    required this.iconContainer,
+    required this.bottomNavBackground,
+    required this.bottomNavBorder,
+    required this.bottomNavSelectedBackground,
+    required this.bottomNavSelectedBorder,
+    required this.navUnselected,
+    required this.logoutBackground,
+    required this.logoutForeground,
+    required this.logoutBorder,
+    required this.dialogBackground,
+  });
+
+  factory _ProfilePalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return _ProfilePalette(
+      background: isDark ? const Color(0xFF07080A) : const Color(0xFFF4F7FB),
+      gradientTop: isDark ? const Color(0xFF14161A) : const Color(0xFFFBFCFF),
+      gradientBottom: isDark
+          ? const Color(0xFF060709)
+          : const Color(0xFFEEF2F8),
+      surface: isDark ? const Color(0xFF16181D) : Colors.white,
+      surfaceSoft: isDark ? const Color(0xFF1A1D22) : const Color(0xFFF2F5FA),
+      accent: const Color(0xFFD8AD48),
+      tealAccent: const Color(0xFF09B7A3),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.7 : 0.74),
+      textMuted: onSurface.withValues(alpha: isDark ? 0.52 : 0.58),
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.08),
+      divider: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.black.withValues(alpha: 0.06),
+      iconContainer: isDark
+          ? Colors.white.withValues(alpha: 0.03)
+          : Colors.black.withValues(alpha: 0.03),
+      bottomNavBackground: isDark
+          ? const Color(0xFF111317)
+          : const Color(0xFFF9FBFF),
+      bottomNavBorder: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.black.withValues(alpha: 0.08),
+      bottomNavSelectedBackground: isDark
+          ? const Color(0xFF191B1F)
+          : const Color(0xFFF5ECD6),
+      bottomNavSelectedBorder: const Color(
+        0xFFD8AD48,
+      ).withValues(alpha: isDark ? 0.78 : 0.56),
+      navUnselected: onSurface.withValues(alpha: isDark ? 0.62 : 0.58),
+      logoutBackground: isDark
+          ? const Color(0xFF32131A)
+          : const Color(0xFFFFEEF0),
+      logoutForeground: const Color(0xFFF25A65),
+      logoutBorder: isDark
+          ? const Color(0xFFB6424A).withValues(alpha: 0.44)
+          : const Color(0xFFDA7D84).withValues(alpha: 0.44),
+      dialogBackground: isDark ? const Color(0xFF1A1D22) : Colors.white,
     );
   }
 }

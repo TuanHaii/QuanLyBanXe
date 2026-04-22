@@ -1,9 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
+import '../../../shared/services/service_locator.dart';
 import '../../../shared/themes/app_colors.dart';
+import '../../authentication/services/auth_service.dart';
+import '../models/dashboard_summary_model.dart';
+import '../services/dashboard_service.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/quick_action_sheets.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,78 +22,113 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  final DashboardService _dashboardService = getIt<DashboardService>();
+  final AuthService _authService = getIt<AuthService>();
+
+  DashboardSummaryModel? _summary;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  _DashboardPalette _palette(BuildContext context) {
+    return _DashboardPalette.fromTheme(Theme.of(context));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final summary = await _dashboardService.fetchDashboardSummary();
+      if (!mounted) return;
+      setState(() {
+        _summary = summary;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Không thể tải dữ liệu. Vui lòng thử lại.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String get _userName {
+    return _authService.currentUser?.name ?? 'Người dùng';
+  }
+
   @override
   Widget build(BuildContext context) {
     final metrics = _DashboardMetrics.fromWidth(
       MediaQuery.sizeOf(context).width,
     );
-    final baseDarkTheme = ThemeData.dark();
+    final palette = _palette(context);
 
-    return Theme(
-      data: baseDarkTheme.copyWith(
-        textTheme: baseDarkTheme.textTheme.apply(fontFamily: 'Roboto'),
-        primaryTextTheme: baseDarkTheme.primaryTextTheme.apply(
-          fontFamily: 'Roboto',
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0A0B0D),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFE0B54E),
-          surface: Color(0xFF17191D),
-        ),
-      ),
-      child: Scaffold(
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF15171B), Color(0xFF08090B)],
-            ),
+    return Scaffold(
+      backgroundColor: palette.background,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [palette.gradientTop, palette.gradientBottom],
           ),
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
-                      metrics.px(14),
-                      metrics.px(8),
-                      metrics.px(14),
-                      metrics.px(20),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTopBar(metrics),
-                        SizedBox(height: metrics.px(12)),
-                        _buildHeroBanner(metrics),
-                        SizedBox(height: metrics.px(12)),
-                        _buildStatsGrid(metrics),
-                        SizedBox(height: metrics.px(16)),
-                        _buildSectionTitle('• Hành Động Nhanh', metrics),
-                        SizedBox(height: metrics.px(10)),
-                        _buildQuickActionsGrid(metrics),
-                        SizedBox(height: metrics.px(14)),
-                        _buildSectionTitle('• Giao Dịch Gần Đây', metrics),
-                        SizedBox(height: metrics.px(10)),
-                        _buildRecentTransactions(metrics),
-                        SizedBox(height: metrics.px(8)),
-                      ],
-                    ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    metrics.px(14),
+                    metrics.px(8),
+                    metrics.px(14),
+                    metrics.px(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTopBar(metrics),
+                      SizedBox(height: metrics.px(12)),
+                      _buildHeroBanner(metrics),
+                      SizedBox(height: metrics.px(12)),
+                      _buildStatsGrid(metrics),
+                      SizedBox(height: metrics.px(16)),
+                      _buildSectionTitle('• Hành Động Nhanh', metrics),
+                      SizedBox(height: metrics.px(10)),
+                      _buildQuickActionsGrid(metrics),
+                      SizedBox(height: metrics.px(14)),
+                      _buildSectionTitle('• Giao Dịch Gần Đây', metrics),
+                      SizedBox(height: metrics.px(10)),
+                      _buildRecentTransactions(metrics),
+                      SizedBox(height: metrics.px(8)),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(metrics),
       ),
+      bottomNavigationBar: _buildBottomNavigationBar(metrics),
     );
   }
 
   Widget _buildTopBar(_DashboardMetrics metrics) {
+    final palette = _palette(context);
+
     return SizedBox(
       height: metrics.px(34),
       child: Stack(
@@ -97,13 +139,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: _buildTopBarButton(
               metrics: metrics,
               icon: Icons.menu_rounded,
-              onTap: () => _showFeatureComingSoon('Menu đang được cập nhật.'),
+              onTap: () => _openActionMenu(),
             ),
           ),
           Text(
             'PRECISION',
             style: AppTextStyles.titleLarge.copyWith(
-              color: const Color(0xFFE0B54E),
+              color: palette.accent,
               fontWeight: FontWeight.w700,
               letterSpacing: metrics.px(2.5),
               fontSize: metrics.fs(21.5),
@@ -138,27 +180,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final palette = _palette(context);
+
     return Material(
       color: Colors.transparent,
       child: InkResponse(
         onTap: onTap,
         radius: metrics.px(20),
         highlightShape: BoxShape.circle,
-        splashColor: Colors.white.withValues(alpha: 0.08),
+        splashColor: palette.topBarSplash,
         child: SizedBox(
           width: metrics.px(30),
           height: metrics.px(30),
-          child: Icon(
-            icon,
-            color: Colors.white.withValues(alpha: 0.95),
-            size: metrics.px(20),
-          ),
+          child: Icon(icon, color: palette.topBarIcon, size: metrics.px(20)),
         ),
       ),
     );
   }
 
   Widget _buildHeroBanner(_DashboardMetrics metrics) {
+    final palette = _palette(context);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(metrics.px(18)),
       child: SizedBox(
@@ -194,7 +236,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     'TỔNG QUAN HOẠT ĐỘNG',
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFFE0B54E),
+                      color: palette.accent,
                       fontWeight: FontWeight.w700,
                       fontSize: metrics.fs(10),
                       letterSpacing: metrics.px(1.6),
@@ -202,7 +244,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    'Xin chào,\nAlex Sterling',
+                    'Xin chào,\n$_userName',
                     style: AppTextStyles.displayMedium.copyWith(
                       fontSize: metrics.fs(40),
                       height: 0.93,
@@ -212,7 +254,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   SizedBox(height: metrics.px(7)),
                   Text(
-                    'Hiệu suất showroom của bạn tăng 12% tuần này. Đây là dữ liệu thực tế của bạn.',
+                    _summary != null
+                        ? 'Doanh thu ${_summary!.totalRevenueLabel}, ${_summary!.revenueTrend} so với tuần trước.'
+                        : 'Đang tải dữ liệu...',
                     style: AppTextStyles.bodySmall.copyWith(
                       fontSize: metrics.fs(11.2),
                       height: 1.3,
@@ -229,6 +273,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSectionTitle(String title, _DashboardMetrics metrics) {
+    final palette = _palette(context);
+
     return FittedBox(
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerLeft,
@@ -237,7 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         style: AppTextStyles.headlineMedium.copyWith(
           fontSize: metrics.fs(14),
           fontWeight: FontWeight.w700,
-          color: Colors.white.withValues(alpha: 0.92),
+          color: palette.sectionTitle,
           letterSpacing: metrics.px(-0.25),
           height: 1,
         ),
@@ -245,41 +291,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatsGrid(_DashboardMetrics metrics) {
-    const stats = [
+  List<_DashboardStat> get _statsFromSummary {
+    final s = _summary;
+    if (s == null) {
+      return [];
+    }
+
+    final stockTrend = s.inStock < s.totalCars ? '-${((1 - s.inStock / s.totalCars) * 100).toStringAsFixed(1)}%' : '0%';
+
+    return [
       _DashboardStat(
         title: 'Tổng xe',
-        value: '1.248',
+        value: _formatNumber(s.totalCars),
         trend: '+4%',
         isPositive: true,
         icon: Icons.directions_car_filled_outlined,
-        accentColor: Color(0xFF4792FF),
+        accentColor: const Color(0xFF4792FF),
       ),
       _DashboardStat(
         title: 'Xe đã bán',
-        value: '412',
-        trend: '+8.2%',
-        isPositive: true,
+        value: _formatNumber(s.carsSold),
+        trend: s.salesTrend,
+        isPositive: !s.salesTrend.startsWith('-'),
         icon: Icons.sell_outlined,
-        accentColor: Color(0xFFE0B54E),
+        accentColor: const Color(0xFFE0B54E),
       ),
       _DashboardStat(
         title: 'Trong kho',
-        value: '836',
-        trend: '-1.5%',
+        value: _formatNumber(s.inStock),
+        trend: stockTrend,
         isPositive: false,
         icon: Icons.inventory_2_outlined,
-        accentColor: Color(0xFFFF6B6B),
+        accentColor: const Color(0xFFFF6B6B),
       ),
       _DashboardStat(
         title: 'Tổng doanh thu',
-        value: '\$4.2M',
-        trend: '+14%',
-        isPositive: true,
+        value: s.totalRevenueLabel,
+        trend: s.revenueTrend,
+        isPositive: !s.revenueTrend.startsWith('-'),
         icon: Icons.bar_chart_rounded,
-        accentColor: Color(0xFF1BC47D),
+        accentColor: const Color(0xFF1BC47D),
       ),
     ];
+  }
+
+  String _formatNumber(int n) {
+    if (n >= 1000) {
+      return '${(n / 1000).toStringAsFixed(n % 1000 == 0 ? 0 : 1)}K';
+    }
+    return n.toString();
+  }
+
+  Widget _buildStatsGrid(_DashboardMetrics metrics) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          children: [
+            Text(_errorMessage!, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _loadDashboard,
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final stats = _statsFromSummary;
+    if (stats.isEmpty) {
+      return const Center(child: Text('Không có dữ liệu'));
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -312,23 +398,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _QuickActionItem(
         title: 'Thêm xe mới',
         icon: Icons.add_circle_outline_rounded,
-        onTap: () => context.go(RouteNames.addCar),
-      ),
-      _QuickActionItem(
-        title: 'Tạo hóa đơn',
-        icon: Icons.attach_money_rounded,
-        onTap: () => context.go(RouteNames.sales),
+        accentColor: const Color(0xFF2FA58A),
+        onTap: _openAddCarFlow,
       ),
       _QuickActionItem(
         title: 'Kho hàng',
         icon: Icons.inventory_2_outlined,
-        onTap: () => context.go(RouteNames.carList),
+        accentColor: const Color(0xFF4E83F5),
+        onTap: _openCarList,
+      ),
+      _QuickActionItem(
+        title: 'Giao dịch',
+        icon: Icons.receipt_long_rounded,
+        accentColor: const Color(0xFFE0A442),
+        onTap: _openSalesList,
       ),
       _QuickActionItem(
         title: 'Báo cáo',
         icon: Icons.pie_chart_outline_rounded,
-        onTap: () =>
-            _showFeatureComingSoon('Mục báo cáo sẽ có trong bản cập nhật tới.'),
+        accentColor: const Color(0xFF5F86D9),
+        onTap: _openReportSheet,
+      ),
+      _QuickActionItem(
+        title: 'Hỗ trợ',
+        icon: Icons.support_agent_rounded,
+        accentColor: const Color(0xFFE57E6D),
+        onTap: _openSupportSheet,
+      ),
+      _QuickActionItem(
+        title: 'Thông báo',
+        icon: Icons.notifications_none_rounded,
+        accentColor: const Color(0xFF6E90A9),
+        onTap: _openNotifications,
       ),
     ];
 
@@ -347,7 +448,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return ActionCard(
           title: action.title,
           icon: action.icon,
-          accentColor: const Color(0xFFE0B54E),
+          accentColor: action.accentColor,
           onTap: action.onTap,
           uiScale: metrics.scale,
           textScale: metrics.fontScale,
@@ -356,27 +457,234 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<void> _openAddCarFlow() async {
+    final created = await context.push<bool>(RouteNames.addCar);
+    if (created == true && mounted) {
+      await _loadDashboard();
+    }
+  }
+
+  Future<void> _openCarList() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const InventoryQuickActionSheet(),
+    );
+  }
+
+  Future<void> _openSalesList() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const SalesQuickActionSheet(),
+    );
+  }
+
+  Future<void> _openReportSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const ReportQuickActionSheet(),
+    );
+  }
+
+  Future<void> _openSupportSheet() async {
+    final user = _authService.currentUser;
+
+    final submitted = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SupportQuickActionSheet(
+        initialName: user?.name ?? '',
+        initialEmail: user?.email ?? '',
+      ),
+    );
+
+    if (submitted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Yêu cầu hỗ trợ đã được gửi.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _openNotifications() {
+    context.go(RouteNames.notification);
+  }
+
+  void _openActionMenu() {
+    final palette = _palette(context);
+
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: palette.navBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+            border: Border.all(color: palette.navBorder, width: 1),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: palette.navBorder,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Trung tâm thao tác',
+                    style: AppTextStyles.titleLarge.copyWith(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Truy cập nhanh các tác vụ quan trọng nhất.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ActionMenuTile(
+                    icon: Icons.add_circle_outline_rounded,
+                    title: 'Thêm xe mới',
+                    subtitle: 'Tạo nhanh hồ sơ xe vào kho',
+                    accentColor: const Color(0xFF2FA58A),
+                    textColor: palette.textPrimary,
+                    subtitleColor: palette.textSecondary,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(() {
+                        unawaited(_openAddCarFlow());
+                      });
+                    },
+                  ),
+                  _ActionMenuTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Kho hàng',
+                    subtitle: 'Xem tổng quan kho xe và tình trạng',
+                    accentColor: const Color(0xFF4E83F5),
+                    textColor: palette.textPrimary,
+                    subtitleColor: palette.textSecondary,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(() {
+                        unawaited(_openCarList());
+                      });
+                    },
+                  ),
+                  _ActionMenuTile(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Giao dịch',
+                    subtitle: 'Tổng quan tình hình bán hàng',
+                    accentColor: const Color(0xFFE0A442),
+                    textColor: palette.textPrimary,
+                    subtitleColor: palette.textSecondary,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(() {
+                        unawaited(_openSalesList());
+                      });
+                    },
+                  ),
+                  _ActionMenuTile(
+                    icon: Icons.pie_chart_outline_rounded,
+                    title: 'Báo cáo nhanh',
+                    subtitle: 'Xem doanh thu, mục tiêu và giao dịch mới',
+                    accentColor: const Color(0xFF5F86D9),
+                    textColor: palette.textPrimary,
+                    subtitleColor: palette.textSecondary,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(() {
+                        unawaited(_openReportSheet());
+                      });
+                    },
+                  ),
+                  _ActionMenuTile(
+                    icon: Icons.support_agent_rounded,
+                    title: 'Liên hệ hỗ trợ',
+                    subtitle: 'Gửi yêu cầu hoặc xem kênh hỗ trợ',
+                    accentColor: const Color(0xFFE57E6D),
+                    textColor: palette.textPrimary,
+                    subtitleColor: palette.textSecondary,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(() {
+                        unawaited(_openSupportSheet());
+                      });
+                    },
+                  ),
+                  _ActionMenuTile(
+                    icon: Icons.refresh_rounded,
+                    title: 'Làm mới dữ liệu',
+                    subtitle: 'Tải lại thống kê của dashboard',
+                    accentColor: const Color(0xFF6E90A9),
+                    textColor: palette.textPrimary,
+                    subtitleColor: palette.textSecondary,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(() {
+                        unawaited(_loadDashboard());
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildRecentTransactions(_DashboardMetrics metrics) {
-    const transactions = [
-      _RecentTransaction(
-        customerName: 'Nguyễn Văn A',
-        carName: 'Toyota Camry 2024',
-        amount: '1.2 tỷ',
-        timeAgo: '2 giờ trước',
-      ),
-      _RecentTransaction(
-        customerName: 'Trần Thị B',
-        carName: 'Honda CR-V 2024',
-        amount: '990 triệu',
-        timeAgo: '5 giờ trước',
-      ),
-      _RecentTransaction(
-        customerName: 'Lê Văn C',
-        carName: 'Mazda CX-5 2024',
-        amount: '880 triệu',
-        timeAgo: 'Hôm qua',
-      ),
-    ];
+    final recentTx = _summary?.recentTransactions ?? [];
+
+    if (recentTx.isEmpty) {
+      return Center(
+        child: Text(
+          'Chưa có giao dịch nào.',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: _palette(context).textSecondary,
+          ),
+        ),
+      );
+    }
+
+    final transactions = recentTx
+        .map((tx) => _RecentTransaction(
+              customerName: tx.customerName,
+              carName: tx.carName,
+              amount: tx.amount,
+              timeAgo: tx.timeAgo,
+            ))
+        .toList();
 
     return Column(
       children: transactions
@@ -391,6 +699,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _RecentTransaction transaction,
     _DashboardMetrics metrics,
   ) {
+    final palette = _palette(context);
     final initials = transaction.customerName.substring(0, 1).toUpperCase();
 
     return Container(
@@ -402,22 +711,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         metrics.px(10),
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1C20),
+        color: palette.cardBackground,
         borderRadius: BorderRadius.circular(metrics.px(16)),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-          width: 1,
-        ),
+        border: Border.all(color: palette.cardBorder, width: 1),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: metrics.px(19),
-            backgroundColor: const Color(0xFFE0B54E),
+            backgroundColor: palette.accent,
             child: Text(
               initials,
               style: AppTextStyles.titleMedium.copyWith(
-                color: const Color(0xFF1A1A1A),
+                color: palette.avatarText,
                 fontWeight: FontWeight.w700,
                 fontSize: metrics.fs(17),
               ),
@@ -431,7 +737,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   transaction.customerName,
                   style: AppTextStyles.titleSmall.copyWith(
-                    color: Colors.white,
+                    color: palette.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(14.5),
                   ),
@@ -440,7 +746,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   transaction.carName,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: palette.textSecondary,
                     fontSize: metrics.fs(11),
                   ),
                 ),
@@ -462,7 +768,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text(
                 transaction.timeAgo,
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: palette.textMuted,
                   fontSize: metrics.fs(10.5),
                 ),
               ),
@@ -474,6 +780,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildBottomNavigationBar(_DashboardMetrics metrics) {
+    final palette = _palette(context);
+
     const navItems = [
       _DashboardNavItem(icon: Icons.home_outlined, label: 'Trang Chủ'),
       _DashboardNavItem(icon: Icons.storefront_outlined, label: 'Mall'),
@@ -486,13 +794,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF121316),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
-            width: 1,
-          ),
-        ),
+        color: palette.navBackground,
+        border: Border(top: BorderSide(color: palette.navBorder, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -517,12 +820,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: EdgeInsets.symmetric(vertical: metrics.px(7)),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF191B1F)
+                          ? palette.navSelectedBackground
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(metrics.px(10)),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFFE0B54E).withValues(alpha: 0.9)
+                            ? palette.navSelectedBorder
                             : Colors.transparent,
                         width: 1,
                       ),
@@ -534,8 +837,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           item.icon,
                           size: metrics.px(19),
                           color: isSelected
-                              ? const Color(0xFFE0B54E)
-                              : Colors.white.withValues(alpha: 0.68),
+                              ? palette.accent
+                              : palette.navUnselected,
                         ),
                         SizedBox(height: metrics.px(3)),
                         Text(
@@ -546,8 +849,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                             color: isSelected
-                                ? const Color(0xFFE0B54E)
-                                : Colors.white.withValues(alpha: 0.62),
+                                ? palette.accent
+                                : palette.navUnselected,
                           ),
                         ),
                       ],
@@ -611,13 +914,98 @@ class _DashboardStat {
 class _QuickActionItem {
   final String title;
   final IconData icon;
+  final Color accentColor;
   final VoidCallback onTap;
 
   const _QuickActionItem({
     required this.title,
     required this.icon,
+    required this.accentColor,
     required this.onTap,
   });
+}
+
+class _ActionMenuTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final Color textColor;
+  final Color subtitleColor;
+  final VoidCallback onTap;
+
+  const _ActionMenuTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.textColor,
+    required this.subtitleColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.titleSmall.copyWith(
+                          color: textColor,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: subtitleColor,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: subtitleColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _RecentTransaction {
@@ -692,5 +1080,87 @@ class _DashboardMetrics {
       return 1.56;
     }
     return 1.44;
+  }
+}
+
+class _DashboardPalette {
+  final Color background;
+  final Color gradientTop;
+  final Color gradientBottom;
+  final Color accent;
+  final Color topBarIcon;
+  final Color topBarSplash;
+  final Color sectionTitle;
+  final Color cardBackground;
+  final Color cardBorder;
+  final Color avatarText;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color navBackground;
+  final Color navBorder;
+  final Color navSelectedBackground;
+  final Color navSelectedBorder;
+  final Color navUnselected;
+
+  const _DashboardPalette({
+    required this.background,
+    required this.gradientTop,
+    required this.gradientBottom,
+    required this.accent,
+    required this.topBarIcon,
+    required this.topBarSplash,
+    required this.sectionTitle,
+    required this.cardBackground,
+    required this.cardBorder,
+    required this.avatarText,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.navBackground,
+    required this.navBorder,
+    required this.navSelectedBackground,
+    required this.navSelectedBorder,
+    required this.navUnselected,
+  });
+
+  factory _DashboardPalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return _DashboardPalette(
+      background: theme.scaffoldBackgroundColor,
+      gradientTop: isDark ? const Color(0xFF15171B) : const Color(0xFFF6F8FC),
+      gradientBottom: isDark
+          ? const Color(0xFF08090B)
+          : const Color(0xFFECEFF6),
+      accent: const Color(0xFFE0B54E),
+      topBarIcon: isDark ? Colors.white.withValues(alpha: 0.95) : onSurface,
+      topBarSplash: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.black.withValues(alpha: 0.06),
+      sectionTitle: isDark
+          ? Colors.white.withValues(alpha: 0.92)
+          : onSurface.withValues(alpha: 0.86),
+      cardBackground: isDark ? const Color(0xFF1A1C20) : Colors.white,
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.black.withValues(alpha: 0.08),
+      avatarText: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF3A2B0E),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.65 : 0.72),
+      textMuted: onSurface.withValues(alpha: isDark ? 0.55 : 0.62),
+      navBackground: isDark ? const Color(0xFF121316) : const Color(0xFFF9FBFF),
+      navBorder: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.black.withValues(alpha: 0.08),
+      navSelectedBackground: isDark
+          ? const Color(0xFF191B1F)
+          : const Color(0xFFEFE2C3),
+      navSelectedBorder: const Color(
+        0xFFE0B54E,
+      ).withValues(alpha: isDark ? 0.9 : 0.56),
+      navUnselected: onSurface.withValues(alpha: isDark ? 0.68 : 0.62),
+    );
   }
 }

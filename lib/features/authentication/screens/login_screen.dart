@@ -1,11 +1,14 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../dashboard/screens/dashboard_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../shared/constants/app_constants.dart';
+import '../../../shared/services/service_locator.dart';
+import '../services/auth_service.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/primary_auth_button.dart';
 import '../widgets/secondary_auth_button.dart';
-import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -72,44 +75,46 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    // mounted kiểm tra xem widget LoginScreen này còn đang hiển thị trên màn hình không
-    if (!mounted) return;
+    if (_isLoading) {
+      return;
+    }
 
-    setState(() => _isLoading = false);
-    // lệnh chuyển trang xem và xóa lịch sử không cho back lại login
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const DashboardScreen()),
-    );
+    setState(() => _isLoading = true);
+
+    try {
+      final authService = getIt<AuthService>();
+      await authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      context.go(RouteNames.dashboard);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _openRegisterScreen() {
-    Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        transitionDuration: const Duration(milliseconds: 500),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, animation, secondaryAnimation) =>
-            const RegisterScreen(),
-        transitionsBuilder: (_, animation, secondaryAnimation, child) {
-          final slideAnimation = Tween<Offset>(
-            begin: const Offset(1, 0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-
-          final fadeAnimation = Tween<double>(
-            begin: 0,
-            end: 1,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-
-          return FadeTransition(
-            opacity: fadeAnimation,
-            child: SlideTransition(position: slideAnimation, child: child),
-          );
-        },
-      ),
-    );
+    context.push(RouteNames.register);
   }
 
   @override
@@ -122,8 +127,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121316),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -182,22 +189,25 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onSurface = colorScheme.onSurface;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1B24),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: onSurface.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Welcome Back',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -205,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen>
             'Please sign in to continue',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: onSurface.withValues(alpha: 0.68),
             ),
           ),
           const SizedBox(height: 32),
@@ -239,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen>
                 'Forgot?',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -254,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen>
           Row(
             children: [
               Expanded(
-                child: Divider(color: Colors.white.withValues(alpha: 0.1)),
+                child: Divider(color: onSurface.withValues(alpha: 0.12)),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -262,12 +272,12 @@ class _LoginScreenState extends State<LoginScreen>
                   'SECURE ACCESS ONLY',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: onSurface.withValues(alpha: 0.68),
                   ),
                 ),
               ),
               Expanded(
-                child: Divider(color: Colors.white.withValues(alpha: 0.1)),
+                child: Divider(color: onSurface.withValues(alpha: 0.12)),
               ),
             ],
           ),
@@ -306,14 +316,14 @@ class _LoginScreenState extends State<LoginScreen>
               Text(
                 "Don't have an account yet?",
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
+                  color: onSurface.withValues(alpha: 0.74),
                   fontSize: 12,
                 ),
               ),
               TextButton(
                 onPressed: _openRegisterScreen,
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFD0DBE8),
+                  foregroundColor: colorScheme.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
                 child: const Text(

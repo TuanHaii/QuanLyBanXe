@@ -26,25 +26,37 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardBackground = isDark ? const Color(0xFF1A1C20) : Colors.white;
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.black.withValues(alpha: 0.08);
+    final valueColor = colorScheme.onSurface;
+    final titleColor = colorScheme.onSurface.withValues(
+      alpha: isDark ? 0.5 : 0.62,
+    );
+
     double sp(double value) => value * uiScale;
     double fs(double value) => value * textScale;
 
     final valueTextStyle = AppTextStyles.displaySmall.copyWith(
       fontSize: fs(20).clamp(20, 24).toDouble(),
       fontWeight: FontWeight.w700,
-      color: Colors.white,
+      color: valueColor,
       height: 1,
       letterSpacing: -0.7,
     );
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1C20),
+        color: cardBackground,
         borderRadius: BorderRadius.circular(sp(16)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1.1),
+        border: Border.all(color: cardBorder, width: 1.1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
             blurRadius: sp(12),
             offset: Offset(0, sp(7)),
           ),
@@ -87,7 +99,7 @@ class StatCard extends StatelessWidget {
                   fontSize: fs(10),
                   letterSpacing: 1.05,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: titleColor,
                 ),
               ),
               SizedBox(height: sp(3)),
@@ -96,10 +108,7 @@ class StatCard extends StatelessWidget {
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: valueTextStyle,
-                  ),
+                  child: Text(value, style: valueTextStyle),
                 ),
               ),
             ],
@@ -130,11 +139,21 @@ class ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBackground = isDark ? const Color(0xFF1A1C20) : Colors.white;
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.black.withValues(alpha: 0.08);
+    final textColor = colorScheme.onSurface.withValues(
+      alpha: isDark ? 0.76 : 0.8,
+    );
+
     double sp(double value) => value * uiScale;
     double fs(double value) => value * textScale;
 
     return Material(
-      color: const Color(0xFF1A1C20),
+      color: cardBackground,
       borderRadius: BorderRadius.circular(sp(15)),
       child: InkWell(
         onTap: onTap,
@@ -144,7 +163,7 @@ class ActionCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(sp(15)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1),
+            border: Border.all(color: cardBorder, width: 1),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -165,7 +184,7 @@ class ActionCard extends StatelessWidget {
               Text(
                 title.toUpperCase(),
                 style: AppTextStyles.labelMedium.copyWith(
-                  color: Colors.white.withValues(alpha: 0.76),
+                  color: textColor,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.7,
                   fontSize: fs(11),

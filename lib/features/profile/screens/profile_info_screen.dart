@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/constants/app_constants.dart';
+import '../../../shared/services/service_locator.dart';
 import '../../../shared/themes/app_colors.dart';
+import '../../authentication/services/auth_service.dart';
 
 class ProfileInfoScreen extends StatefulWidget {
   const ProfileInfoScreen({super.key});
@@ -11,11 +13,11 @@ class ProfileInfoScreen extends StatefulWidget {
 }
 
 class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
-  static const Color _backgroundColor = Color(0xFF07080A);
-  static const Color _surfaceColor = Color(0xFF16181D);
-  static const Color _surfaceSoftColor = Color(0xFF1A1D22);
-  static const Color _accentColor = Color(0xFFD8AD48);
-  static const Color _tealAccentColor = Color(0xFF09B7A3);
+  _ProfileInfoPalette _palette(BuildContext context) {
+    return _ProfileInfoPalette.fromTheme(Theme.of(context));
+  }
+
+  final AuthService _authService = getIt<AuthService>();
 
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
@@ -23,14 +25,28 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
   late final TextEditingController _positionController;
   late final TextEditingController _departmentController;
 
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: 'Alex Sterling');
-    _emailController = TextEditingController(text: 'alex@precisionauto.vn');
-    _phoneController = TextEditingController(text: '0901 234 567');
-    _positionController = TextEditingController(text: 'Giám Đốc Kinh Doanh');
+    final user = _authService.currentUser;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+    _positionController = TextEditingController(text: _roleLabel(user?.role));
     _departmentController = TextEditingController(text: 'Phòng Kinh Doanh');
+  }
+
+  String _roleLabel(String? role) {
+    switch (role?.toLowerCase()) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'manager':
+        return 'Giám Đốc Kinh Doanh';
+      default:
+        return 'Nhân viên';
+    }
   }
 
   @override
@@ -43,15 +59,40 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
     super.dispose();
   }
 
-  void _saveProfile() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Đã lưu thay đổi thông tin cá nhân.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  Future<void> _saveProfile() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    try {
+      await _authService.updateProfile({
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Đã lưu thay đổi thông tin cá nhân.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Không thể lưu. Vui lòng thử lại.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -59,9 +100,10 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
     final metrics = _ProfileInfoMetrics.fromWidth(
       MediaQuery.sizeOf(context).width,
     );
+    final palette = _palette(context);
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: palette.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -69,18 +111,18 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
         title: Text(
           'Thông Tin Cá Nhân',
           style: AppTextStyles.titleLarge.copyWith(
-            color: Colors.white,
+            color: palette.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: metrics.fs(20),
           ),
         ),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF14161A), Color(0xFF060709)],
+            colors: [palette.gradientTop, palette.gradientBottom],
           ),
         ),
         child: SafeArea(
@@ -151,8 +193,8 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
                   child: FilledButton.icon(
                     onPressed: _saveProfile,
                     style: FilledButton.styleFrom(
-                      backgroundColor: _accentColor,
-                      foregroundColor: const Color(0xFF1A1710),
+                      backgroundColor: palette.accent,
+                      foregroundColor: palette.buttonForeground,
                       padding: EdgeInsets.symmetric(vertical: metrics.px(14)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(metrics.px(14)),
@@ -165,7 +207,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
                     label: Text(
                       'Lưu Thay Đổi',
                       style: AppTextStyles.titleSmall.copyWith(
-                        color: const Color(0xFF1A1710),
+                        color: palette.buttonForeground,
                         fontWeight: FontWeight.w800,
                         fontSize: metrics.fs(16),
                       ),
@@ -177,7 +219,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
                   child: Text(
                     'Phiên bản ${AppConstants.appVersion} - Precision Auto',
                     style: AppTextStyles.labelMedium.copyWith(
-                      color: Colors.white.withValues(alpha: 0.42),
+                      color: palette.textMuted,
                       fontSize: metrics.fs(11),
                     ),
                   ),
@@ -191,6 +233,8 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
   }
 
   Widget _buildIdentityCard(_ProfileInfoMetrics metrics) {
+    final palette = _palette(context);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -200,9 +244,9 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
         metrics.px(13),
       ),
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(18)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Row(
         children: [
@@ -219,9 +263,9 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
             ),
             alignment: Alignment.center,
             child: Text(
-              'A',
+              (_authService.currentUser?.name ?? 'U').substring(0, 1).toUpperCase(),
               style: AppTextStyles.headlineSmall.copyWith(
-                color: const Color(0xFF1A1710),
+                color: palette.buttonForeground,
                 fontWeight: FontWeight.w800,
                 fontSize: metrics.fs(28),
               ),
@@ -235,7 +279,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
                 Text(
                   'Hồ Sơ Đã Xác Thực',
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: _tealAccentColor,
+                    color: palette.tealAccent,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(12),
                   ),
@@ -244,7 +288,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
                 Text(
                   'Dữ liệu tài khoản của bạn đã đồng bộ với hệ thống nhân sự.',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: palette.textSecondary,
                     fontSize: metrics.fs(12),
                     height: 1.3,
                   ),
@@ -258,10 +302,12 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
   }
 
   Widget _buildSectionTitle(String text, _ProfileInfoMetrics metrics) {
+    final palette = _palette(context);
+
     return Text(
       text,
       style: AppTextStyles.labelLarge.copyWith(
-        color: Colors.white.withValues(alpha: 0.55),
+        color: palette.textMuted,
         letterSpacing: metrics.px(1.05),
         fontWeight: FontWeight.w700,
         fontSize: metrics.fs(13),
@@ -273,11 +319,13 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
     required _ProfileInfoMetrics metrics,
     required List<Widget> children,
   }) {
+    final palette = _palette(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(17)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(children: children),
     );
@@ -290,6 +338,8 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    final palette = _palette(context);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         metrics.px(12),
@@ -301,36 +351,90 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
         controller: controller,
         keyboardType: keyboardType,
         style: AppTextStyles.bodyMedium.copyWith(
-          color: Colors.white,
+          color: palette.textPrimary,
           fontSize: metrics.fs(14),
         ),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: AppTextStyles.bodySmall.copyWith(
-            color: Colors.white.withValues(alpha: 0.58),
+            color: palette.textSecondary,
             fontSize: metrics.fs(12),
           ),
-          prefixIcon: Icon(icon, color: _accentColor, size: metrics.px(18)),
+          prefixIcon: Icon(icon, color: palette.accent, size: metrics.px(18)),
           filled: true,
-          fillColor: _surfaceSoftColor,
+          fillColor: palette.surfaceSoft,
           contentPadding: EdgeInsets.symmetric(
             horizontal: metrics.px(12),
             vertical: metrics.px(12),
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(metrics.px(12)),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            borderSide: BorderSide(color: palette.cardBorder),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(metrics.px(12)),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            borderSide: BorderSide(color: palette.cardBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(metrics.px(12)),
-            borderSide: const BorderSide(color: _accentColor, width: 1.1),
+            borderSide: BorderSide(color: palette.accent, width: 1.1),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileInfoPalette {
+  final Color background;
+  final Color gradientTop;
+  final Color gradientBottom;
+  final Color surface;
+  final Color surfaceSoft;
+  final Color accent;
+  final Color tealAccent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color cardBorder;
+  final Color buttonForeground;
+
+  const _ProfileInfoPalette({
+    required this.background,
+    required this.gradientTop,
+    required this.gradientBottom,
+    required this.surface,
+    required this.surfaceSoft,
+    required this.accent,
+    required this.tealAccent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.cardBorder,
+    required this.buttonForeground,
+  });
+
+  factory _ProfileInfoPalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return _ProfileInfoPalette(
+      background: isDark ? const Color(0xFF07080A) : const Color(0xFFF4F7FB),
+      gradientTop: isDark ? const Color(0xFF14161A) : const Color(0xFFFBFCFF),
+      gradientBottom: isDark
+          ? const Color(0xFF060709)
+          : const Color(0xFFEEF2F8),
+      surface: isDark ? const Color(0xFF16181D) : Colors.white,
+      surfaceSoft: isDark ? const Color(0xFF1A1D22) : const Color(0xFFF2F5FA),
+      accent: const Color(0xFFD8AD48),
+      tealAccent: const Color(0xFF09B7A3),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.65 : 0.7),
+      textMuted: onSurface.withValues(alpha: isDark ? 0.52 : 0.58),
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.08),
+      buttonForeground: const Color(0xFF1A1710),
     );
   }
 }

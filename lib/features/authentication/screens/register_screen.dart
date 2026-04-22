@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../shared/constants/app_constants.dart';
+import '../../../shared/services/service_locator.dart';
+import '../services/auth_service.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/primary_auth_button.dart';
@@ -23,6 +27,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
 
   Future<void> _handleRegister() async {
+    if (_isLoading) {
+      return;
+    }
+
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
@@ -64,15 +72,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
 
-    if (!mounted) return;
+    try {
+      final authService = getIt<AuthService>();
+      await authService.register(
+        name: fullName,
+        email: email,
+        password: password,
+        phone: phone,
+      );
 
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Register success. Please sign in.')),
-    );
-    Navigator.of(context).pop();
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Đăng ký thành công.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      context.go(RouteNames.dashboard);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -87,15 +127,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onSurface = colorScheme.onSurface;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121316),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Create Account',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: onSurface),
         ),
       ),
       body: SafeArea(
@@ -109,21 +153,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1B24),
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: onSurface.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Register',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -131,7 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       'Fill your details to create a secure account.',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: onSurface.withValues(alpha: 0.68),
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -190,14 +234,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Text(
                           'Already have an account?',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
+                            color: onSurface.withValues(alpha: 0.74),
                             fontSize: 12,
                           ),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () => context.pop(),
                           style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFFD0DBE8),
+                            foregroundColor: colorScheme.primary,
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                           ),
                           child: const Text(

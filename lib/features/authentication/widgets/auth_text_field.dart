@@ -27,6 +27,9 @@ class AuthTextField extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onSurface = colorScheme.onSurface;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -39,10 +42,11 @@ class AuthTextField extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: onSurface.withValues(alpha: 0.72),
                 letterSpacing: 1.2, // Tăng khoảng cách giữa các chữ cái
               ),
             ),
+            // ignore: use_null_aware_elements
             if (trailingAction != null) trailingAction!,
           ],
         ),
@@ -50,27 +54,27 @@ class AuthTextField extends StatelessWidget {
         // ô nhập liệu
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF121316),
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            border: Border.all(color: onSurface.withValues(alpha: 0.08)),
           ),
           child: TextFormField(
             controller: controller,
             obscureText: obscureText,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: TextStyle(color: onSurface, fontSize: 14),
             decoration: InputDecoration(
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
               prefixIcon: Icon(
                 prefixIcon,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: onSurface.withValues(alpha: 0.58),
                 size: 20,
               ),
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(
                         obscureText ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: onSurface.withValues(alpha: 0.58),
                         size: 20,
                       ),
                       onPressed: onToggleVisibility,

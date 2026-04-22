@@ -22,6 +22,8 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeService.themeMode,
+          themeAnimationCurve: Curves.easeInOutCubic,
+          themeAnimationDuration: AppConstants.mediumDuration,
           routerConfig: RouterService.router,
         );
       },

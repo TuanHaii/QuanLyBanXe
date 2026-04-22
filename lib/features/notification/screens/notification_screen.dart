@@ -20,10 +20,11 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen>
     with SingleTickerProviderStateMixin {
-  static const Color _backgroundColor = Color(0xFF07080A);
-  static const Color _surfaceColor = Color(0xFF15181D);
-  static const Color _accentColor = Color(0xFFD6A93E);
   static const Duration _cardsAnimationDuration = Duration(milliseconds: 780);
+
+  _NotificationPalette _palette(BuildContext context) {
+    return _NotificationPalette.fromTheme(Theme.of(context));
+  }
 
   final NotificationService _notificationService = getIt<NotificationService>();
   late final AnimationController _cardsAnimationController;
@@ -140,6 +141,30 @@ class _NotificationScreenState extends State<NotificationScreen>
     });
   }
 
+  void _handleNotificationTap(NotificationItem notification) {
+    _markAsRead(notification.id);
+
+    switch (notification.category) {
+      case NotificationCategory.transaction:
+        context.go(RouteNames.sales);
+        return;
+      case NotificationCategory.inventory:
+        context.go(RouteNames.carList);
+        return;
+      case NotificationCategory.report:
+        context.go(RouteNames.dashboard);
+        return;
+      case NotificationCategory.promotion:
+      case NotificationCategory.market:
+        context.go(RouteNames.mall);
+        return;
+      case NotificationCategory.customer:
+      case NotificationCategory.system:
+        context.go(RouteNames.profile);
+        return;
+    }
+  }
+
   int get _unreadCount {
     return _notifications.where((item) => !item.isRead).length;
   }
@@ -182,21 +207,23 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   @override
   Widget build(BuildContext context) {
+    final palette = _palette(context);
+
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: palette.background,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF14161A), Color(0xFF060709)],
+            colors: [palette.gradientTop, palette.gradientBottom],
           ),
         ),
         child: SafeArea(
           bottom: false,
           child: RefreshIndicator(
-            color: _accentColor,
-            backgroundColor: _surfaceColor,
+            color: palette.accent,
+            backgroundColor: palette.surface,
             onRefresh: () => _loadNotifications(showLoader: false),
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(
@@ -218,10 +245,10 @@ class _NotificationScreenState extends State<NotificationScreen>
                   ),
                 ),
                 if (_isLoading)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
-                      child: CircularProgressIndicator(color: _accentColor),
+                      child: CircularProgressIndicator(color: palette.accent),
                     ),
                   )
                 else if (_errorMessage != null)
@@ -236,15 +263,15 @@ class _NotificationScreenState extends State<NotificationScreen>
                             _errorMessage!,
                             textAlign: TextAlign.center,
                             style: AppTextStyles.bodyLarge.copyWith(
-                              color: Colors.white70,
+                              color: palette.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 12),
                           FilledButton(
                             onPressed: _loadNotifications,
                             style: FilledButton.styleFrom(
-                              backgroundColor: _accentColor,
-                              foregroundColor: Colors.black,
+                              backgroundColor: palette.accent,
+                              foregroundColor: palette.accentForeground,
                             ),
                             child: const Text('Thử lại'),
                           ),
@@ -283,6 +310,8 @@ class _NotificationScreenState extends State<NotificationScreen>
   }
 
   Widget _buildHeader() {
+    final palette = _palette(context);
+
     return Row(
       children: [
         Expanded(
@@ -292,7 +321,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               Text(
                 'Thông Báo',
                 style: AppTextStyles.headlineMedium.copyWith(
-                  color: Colors.white,
+                  color: palette.textPrimary,
                   fontWeight: FontWeight.w800,
                   fontSize: 34,
                   height: 1,
@@ -302,7 +331,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               Text(
                 '$_unreadCount chưa đọc',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: Colors.white.withValues(alpha: 0.58),
+                  color: palette.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -312,19 +341,19 @@ class _NotificationScreenState extends State<NotificationScreen>
         TextButton(
           onPressed: _markAllAsRead,
           style: TextButton.styleFrom(
-            foregroundColor: _accentColor,
+            foregroundColor: palette.accent,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(999),
-              side: BorderSide(color: _accentColor.withValues(alpha: 0.72)),
+              side: BorderSide(color: palette.accent.withValues(alpha: 0.72)),
             ),
           ),
           child: Text(
             'Đọc tất cả',
             style: AppTextStyles.labelMedium.copyWith(
-              color: _accentColor,
+              color: palette.accent,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -361,6 +390,8 @@ class _NotificationScreenState extends State<NotificationScreen>
   }
 
   Widget _buildBottomNavigationBar() {
+    final palette = _palette(context);
+
     const navItems = [
       _NotificationNavItem(icon: Icons.home_outlined, label: 'Trang Chủ'),
       _NotificationNavItem(icon: Icons.shopping_bag_outlined, label: 'Mall'),
@@ -373,13 +404,8 @@ class _NotificationScreenState extends State<NotificationScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF111317),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
-            width: 1,
-          ),
-        ),
+        color: palette.navBackground,
+        border: Border(top: BorderSide(color: palette.navBorder, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -400,12 +426,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF191B1F)
+                          ? palette.navSelectedBackground
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(11),
                       border: Border.all(
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.72)
+                            ? palette.navSelectedBorder
                             : Colors.transparent,
                       ),
                     ),
@@ -416,16 +442,16 @@ class _NotificationScreenState extends State<NotificationScreen>
                           item.icon,
                           size: 19,
                           color: isSelected
-                              ? _accentColor
-                              : Colors.white.withValues(alpha: 0.68),
+                              ? palette.accent
+                              : palette.navUnselected,
                         ),
                         const SizedBox(height: 3),
                         Text(
                           item.label,
                           style: AppTextStyles.labelSmall.copyWith(
                             color: isSelected
-                                ? _accentColor
-                                : Colors.white.withValues(alpha: 0.62),
+                                ? palette.accent
+                                : palette.navUnselected,
                             fontWeight: isSelected
                                 ? FontWeight.w700
                                 : FontWeight.w500,
@@ -470,7 +496,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           padding: const EdgeInsets.only(bottom: 10),
           child: NotificationCard(
             notification: notification,
-            onTap: () => _markAsRead(notification.id),
+            onTap: () => _handleNotificationTap(notification),
           ),
         ),
       ),
@@ -478,6 +504,7 @@ class _NotificationScreenState extends State<NotificationScreen>
   }
 
   Widget _buildEmptyState() {
+    final palette = _palette(context);
     final isAllTab = _selectedTab == _NotificationTab.all;
 
     return Padding(
@@ -488,12 +515,12 @@ class _NotificationScreenState extends State<NotificationScreen>
           constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
           decoration: BoxDecoration(
-            color: const Color(0xFF14171C),
+            color: palette.surface,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: palette.cardBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
+                color: Colors.black.withValues(alpha: palette.shadowAlpha),
                 blurRadius: 22,
                 offset: const Offset(0, 14),
               ),
@@ -509,18 +536,18 @@ class _NotificationScreenState extends State<NotificationScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      _accentColor.withValues(alpha: 0.27),
-                      _accentColor.withValues(alpha: 0.05),
+                      palette.accent.withValues(alpha: 0.27),
+                      palette.accent.withValues(alpha: 0.05),
                     ],
                   ),
                   border: Border.all(
-                    color: _accentColor.withValues(alpha: 0.36),
+                    color: palette.accent.withValues(alpha: 0.36),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_none_rounded,
                   size: 34,
-                  color: _accentColor,
+                  color: palette.accent,
                 ),
               ),
               const SizedBox(height: 14),
@@ -530,7 +557,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                     : 'Không có thông báo cho mục ${_tabLabel(_selectedTab)}',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.titleLarge.copyWith(
-                  color: Colors.white,
+                  color: palette.textPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 20,
                 ),
@@ -542,7 +569,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                     : 'Thử chuyển sang mục khác hoặc làm mới để kiểm tra thông báo mới nhất.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.white.withValues(alpha: 0.66),
+                  color: palette.textSecondary,
                   fontSize: 13,
                 ),
               ),
@@ -557,10 +584,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                           _playCardsIntro();
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.18),
-                          ),
+                          foregroundColor: palette.textPrimary,
+                          side: BorderSide(color: palette.buttonOutline),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -574,8 +599,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                     child: FilledButton(
                       onPressed: _loadNotifications,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _accentColor,
-                        foregroundColor: Colors.black,
+                        backgroundColor: palette.accent,
+                        foregroundColor: palette.accentForeground,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -602,4 +627,79 @@ class _NotificationNavItem {
   final String label;
 
   const _NotificationNavItem({required this.icon, required this.label});
+}
+
+class _NotificationPalette {
+  final Color background;
+  final Color gradientTop;
+  final Color gradientBottom;
+  final Color surface;
+  final Color accent;
+  final Color accentForeground;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color cardBorder;
+  final Color navBackground;
+  final Color navBorder;
+  final Color navSelectedBackground;
+  final Color navSelectedBorder;
+  final Color navUnselected;
+  final Color buttonOutline;
+  final double shadowAlpha;
+
+  const _NotificationPalette({
+    required this.background,
+    required this.gradientTop,
+    required this.gradientBottom,
+    required this.surface,
+    required this.accent,
+    required this.accentForeground,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.cardBorder,
+    required this.navBackground,
+    required this.navBorder,
+    required this.navSelectedBackground,
+    required this.navSelectedBorder,
+    required this.navUnselected,
+    required this.buttonOutline,
+    required this.shadowAlpha,
+  });
+
+  factory _NotificationPalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+    const accent = Color(0xFFD6A93E);
+
+    return _NotificationPalette(
+      background: isDark ? const Color(0xFF07080A) : const Color(0xFFF4F7FB),
+      gradientTop: isDark ? const Color(0xFF14161A) : const Color(0xFFFBFCFF),
+      gradientBottom: isDark
+          ? const Color(0xFF060709)
+          : const Color(0xFFEEF2F8),
+      surface: isDark ? const Color(0xFF15181D) : Colors.white,
+      accent: accent,
+      accentForeground: isDark ? Colors.black : const Color(0xFF2D230F),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.66 : 0.72),
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.black.withValues(alpha: 0.08),
+      navBackground: isDark ? const Color(0xFF111317) : const Color(0xFFF9FBFF),
+      navBorder: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.black.withValues(alpha: 0.08),
+      navSelectedBackground: isDark
+          ? const Color(0xFF191B1F)
+          : const Color(0xFFF3E8CD),
+      navSelectedBorder: isDark
+          ? Colors.white.withValues(alpha: 0.72)
+          : const Color(0xFFC89B34).withValues(alpha: 0.52),
+      navUnselected: onSurface.withValues(alpha: isDark ? 0.62 : 0.58),
+      buttonOutline: isDark
+          ? Colors.white.withValues(alpha: 0.18)
+          : Colors.black.withValues(alpha: 0.14),
+      shadowAlpha: isDark ? 0.35 : 0.12,
+    );
+  }
 }

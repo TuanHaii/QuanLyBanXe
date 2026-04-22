@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../shared/constants/app_constants.dart';
+import '../../../shared/services/service_locator.dart';
 import '../../../shared/themes/app_colors.dart';
+import '../models/history_item_model.dart';
+import '../services/history_service.dart';
 
 enum _HistoryFilter { all, success, pending }
 
@@ -13,50 +17,48 @@ class ProfileHistoryScreen extends StatefulWidget {
 }
 
 class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
-  static const Color _backgroundColor = Color(0xFF07080A);
-  static const Color _surfaceColor = Color(0xFF16181D);
-  static const Color _accentColor = Color(0xFFD8AD48);
-  static const Color _tealAccentColor = Color(0xFF09B7A3);
-  static const Color _warningColor = Color(0xFFE07A3F);
+  _ProfileHistoryPalette _palette(BuildContext context) {
+    return _ProfileHistoryPalette.fromTheme(Theme.of(context));
+  }
+
+  final HistoryService _historyService = getIt<HistoryService>();
 
   _HistoryFilter _selectedFilter = _HistoryFilter.all;
+  List<HistoryItemModel> _historyItems = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  static const List<_HistoryItem> _historyItems = [
-    _HistoryItem(
-      customerName: 'Nguyễn Minh Khang',
-      carName: 'Mercedes C300 2024',
-      amount: '\$72,000',
-      status: 'Thành công',
-      dateLabel: 'Hôm nay, 09:42',
-      isSuccess: true,
-    ),
-    _HistoryItem(
-      customerName: 'Lê Bảo Trâm',
-      carName: 'VinFast VF 8 Plus',
-      amount: '\$53,200',
-      status: 'Đang chờ cọc',
-      dateLabel: 'Hôm qua, 16:15',
-      isSuccess: false,
-    ),
-    _HistoryItem(
-      customerName: 'Trần Quốc Nam',
-      carName: 'Toyota Camry 2.5Q',
-      amount: '\$46,900',
-      status: 'Thành công',
-      dateLabel: '20/04, 11:06',
-      isSuccess: true,
-    ),
-    _HistoryItem(
-      customerName: 'Phạm Diễm My',
-      carName: 'Mazda CX-5 Premium',
-      amount: '\$39,500',
-      status: 'Đang chờ duyệt',
-      dateLabel: '19/04, 14:28',
-      isSuccess: false,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
 
-  List<_HistoryItem> get _filteredHistory {
+  Future<void> _loadHistory() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final items = await _historyService.fetchHistory();
+      if (!mounted) return;
+      setState(() {
+        _historyItems = items;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Không thể tải lịch sử. Vui lòng thử lại.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  List<HistoryItemModel> get _filteredHistory {
     switch (_selectedFilter) {
       case _HistoryFilter.all:
         return _historyItems;
@@ -67,14 +69,46 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
     }
   }
 
+  String _formatAmount(double amount) {
+    if (amount >= 1e9) {
+      return '${(amount / 1e9).toStringAsFixed(1)} tỷ';
+    } else if (amount >= 1e6) {
+      return '${(amount / 1e6).toStringAsFixed(0)} triệu';
+    }
+    return NumberFormat.compact().format(amount);
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays == 0) {
+      return 'Hôm nay, ${DateFormat('HH:mm').format(date)}';
+    } else if (diff.inDays == 1) {
+      return 'Hôm qua, ${DateFormat('HH:mm').format(date)}';
+    }
+    return DateFormat('dd/MM, HH:mm').format(date);
+  }
+
+  String _statusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'Thành công';
+      case 'pending':
+        return 'Đang chờ';
+      default:
+        return status;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final metrics = _ProfileHistoryMetrics.fromWidth(
       MediaQuery.sizeOf(context).width,
     );
+    final palette = _palette(context);
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: palette.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -82,64 +116,89 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
         title: Text(
           'Lịch Sử Giao Dịch',
           style: AppTextStyles.titleLarge.copyWith(
-            color: Colors.white,
+            color: palette.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: metrics.fs(20),
           ),
         ),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF14161A), Color(0xFF060709)],
+            colors: [palette.gradientTop, palette.gradientBottom],
           ),
         ),
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              metrics.px(14),
-              metrics.px(10),
-              metrics.px(14),
-              metrics.px(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSummary(metrics),
-                SizedBox(height: metrics.px(14)),
-                _buildSectionTitle('BỘ LỌC', metrics),
-                SizedBox(height: metrics.px(8)),
-                _buildFilterTabs(metrics),
-                SizedBox(height: metrics.px(14)),
-                _buildSectionTitle('DANH SÁCH GIAO DỊCH', metrics),
-                SizedBox(height: metrics.px(8)),
-                _buildHistoryList(metrics),
-                SizedBox(height: metrics.px(10)),
-                Center(
-                  child: Text(
-                    'Phiên bản ${AppConstants.appVersion} - Precision Auto',
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: Colors.white.withValues(alpha: 0.42),
-                      fontSize: metrics.fs(11),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(_errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _loadHistory,
+                              child: const Text('Thử lại'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadHistory,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.fromLTRB(
+                          metrics.px(14),
+                          metrics.px(10),
+                          metrics.px(14),
+                          metrics.px(20),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSummary(metrics),
+                            SizedBox(height: metrics.px(14)),
+                            _buildSectionTitle('BỘ LỌC', metrics),
+                            SizedBox(height: metrics.px(8)),
+                            _buildFilterTabs(metrics),
+                            SizedBox(height: metrics.px(14)),
+                            _buildSectionTitle('DANH SÁCH GIAO DỊCH', metrics),
+                            SizedBox(height: metrics.px(8)),
+                            _buildHistoryList(metrics),
+                            SizedBox(height: metrics.px(10)),
+                            Center(
+                              child: Text(
+                                'Phiên bản ${AppConstants.appVersion} - Precision Auto',
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: palette.textMuted,
+                                  fontSize: metrics.fs(11),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
   }
 
   Widget _buildSummary(_ProfileHistoryMetrics metrics) {
-    final successfulCount = _historyItems
-        .where((item) => item.isSuccess)
-        .length;
+    final palette = _palette(context);
+
+    final successfulCount =
+        _historyItems.where((item) => item.isSuccess).length;
     final pendingCount = _historyItems.length - successfulCount;
 
     return Row(
@@ -150,7 +209,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
             icon: Icons.receipt_long_outlined,
             value: '${_historyItems.length}',
             label: 'Tổng giao dịch',
-            accentColor: _accentColor,
+            accentColor: palette.accent,
           ),
         ),
         SizedBox(width: metrics.px(8)),
@@ -160,7 +219,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
             icon: Icons.check_circle_outline,
             value: '$successfulCount',
             label: 'Thành công',
-            accentColor: _tealAccentColor,
+            accentColor: palette.tealAccent,
           ),
         ),
         SizedBox(width: metrics.px(8)),
@@ -170,7 +229,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
             icon: Icons.timelapse_rounded,
             value: '$pendingCount',
             label: 'Đang chờ',
-            accentColor: _warningColor,
+            accentColor: palette.warning,
           ),
         ),
       ],
@@ -184,6 +243,8 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
     required String label,
     required Color accentColor,
   }) {
+    final palette = _palette(context);
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         metrics.px(10),
@@ -192,9 +253,9 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
         metrics.px(9),
       ),
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(14)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +265,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
           Text(
             value,
             style: AppTextStyles.titleLarge.copyWith(
-              color: Colors.white,
+              color: palette.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: metrics.fs(24),
               height: 1,
@@ -214,7 +275,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
           Text(
             label,
             style: AppTextStyles.labelMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: palette.textMuted,
               fontSize: metrics.fs(10.5),
             ),
           ),
@@ -224,10 +285,12 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
   }
 
   Widget _buildSectionTitle(String text, _ProfileHistoryMetrics metrics) {
+    final palette = _palette(context);
+
     return Text(
       text,
       style: AppTextStyles.labelLarge.copyWith(
-        color: Colors.white.withValues(alpha: 0.55),
+        color: palette.textMuted,
         letterSpacing: metrics.px(1.05),
         fontWeight: FontWeight.w700,
         fontSize: metrics.fs(13),
@@ -267,6 +330,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
     required _HistoryFilter filter,
     required String label,
   }) {
+    final palette = _palette(context);
     final isSelected = _selectedFilter == filter;
 
     return InkWell(
@@ -284,18 +348,16 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
           vertical: metrics.px(8),
         ),
         decoration: BoxDecoration(
-          color: isSelected ? _accentColor : _surfaceColor,
+          color: isSelected ? palette.accent : palette.surface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isSelected
-                ? _accentColor
-                : Colors.white.withValues(alpha: 0.07),
+            color: isSelected ? palette.accent : palette.cardBorder,
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.labelMedium.copyWith(
-            color: isSelected ? const Color(0xFF1A1710) : Colors.white,
+            color: isSelected ? palette.buttonForeground : palette.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: metrics.fs(12),
           ),
@@ -306,6 +368,17 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
 
   Widget _buildHistoryList(_ProfileHistoryMetrics metrics) {
     final items = _filteredHistory;
+
+    if (items.isEmpty) {
+      return Center(
+        child: Text(
+          'Không có giao dịch nào.',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: _palette(context).textMuted,
+          ),
+        ),
+      );
+    }
 
     return Column(
       children: items
@@ -319,8 +392,12 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
     );
   }
 
-  Widget _buildHistoryTile(_ProfileHistoryMetrics metrics, _HistoryItem item) {
-    final statusColor = item.isSuccess ? _tealAccentColor : _warningColor;
+  Widget _buildHistoryTile(
+    _ProfileHistoryMetrics metrics,
+    HistoryItemModel item,
+  ) {
+    final palette = _palette(context);
+    final statusColor = item.isSuccess ? palette.tealAccent : palette.warning;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -330,9 +407,9 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
         metrics.px(11),
       ),
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(metrics.px(15)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       child: Row(
         children: [
@@ -340,13 +417,13 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
             width: metrics.px(34),
             height: metrics.px(34),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: palette.iconContainer,
               borderRadius: BorderRadius.circular(metrics.px(10)),
             ),
             alignment: Alignment.center,
             child: Icon(
               Icons.directions_car_filled_outlined,
-              color: _accentColor,
+              color: palette.accent,
               size: metrics.px(17),
             ),
           ),
@@ -356,26 +433,26 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.customerName,
+                  item.subtitle,
                   style: AppTextStyles.titleSmall.copyWith(
-                    color: Colors.white,
+                    color: palette.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: metrics.fs(14),
                   ),
                 ),
                 SizedBox(height: metrics.px(2)),
                 Text(
-                  item.carName,
+                  item.title,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: palette.textSecondary,
                     fontSize: metrics.fs(12),
                   ),
                 ),
                 SizedBox(height: metrics.px(4)),
                 Text(
-                  item.dateLabel,
+                  _formatDate(item.date),
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: palette.textMuted,
                     fontSize: metrics.fs(10.5),
                   ),
                 ),
@@ -387,9 +464,9 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                item.amount,
+                _formatAmount(item.amount),
                 style: AppTextStyles.titleSmall.copyWith(
-                  color: _accentColor,
+                  color: palette.accent,
                   fontWeight: FontWeight.w800,
                   fontSize: metrics.fs(14),
                 ),
@@ -405,7 +482,7 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  item.status,
+                  _statusLabel(item.status),
                   style: AppTextStyles.labelSmall.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.w700,
@@ -421,22 +498,63 @@ class _ProfileHistoryScreenState extends State<ProfileHistoryScreen> {
   }
 }
 
-class _HistoryItem {
-  final String customerName;
-  final String carName;
-  final String amount;
-  final String status;
-  final String dateLabel;
-  final bool isSuccess;
+class _ProfileHistoryPalette {
+  final Color background;
+  final Color gradientTop;
+  final Color gradientBottom;
+  final Color surface;
+  final Color accent;
+  final Color tealAccent;
+  final Color warning;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color cardBorder;
+  final Color iconContainer;
+  final Color buttonForeground;
 
-  const _HistoryItem({
-    required this.customerName,
-    required this.carName,
-    required this.amount,
-    required this.status,
-    required this.dateLabel,
-    required this.isSuccess,
+  const _ProfileHistoryPalette({
+    required this.background,
+    required this.gradientTop,
+    required this.gradientBottom,
+    required this.surface,
+    required this.accent,
+    required this.tealAccent,
+    required this.warning,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.cardBorder,
+    required this.iconContainer,
+    required this.buttonForeground,
   });
+
+  factory _ProfileHistoryPalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return _ProfileHistoryPalette(
+      background: isDark ? const Color(0xFF07080A) : const Color(0xFFF4F7FB),
+      gradientTop: isDark ? const Color(0xFF14161A) : const Color(0xFFFBFCFF),
+      gradientBottom: isDark
+          ? const Color(0xFF060709)
+          : const Color(0xFFEEF2F8),
+      surface: isDark ? const Color(0xFF16181D) : Colors.white,
+      accent: const Color(0xFFD8AD48),
+      tealAccent: const Color(0xFF09B7A3),
+      warning: const Color(0xFFE07A3F),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.65 : 0.7),
+      textMuted: onSurface.withValues(alpha: isDark ? 0.52 : 0.58),
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.07)
+          : Colors.black.withValues(alpha: 0.08),
+      iconContainer: isDark
+          ? Colors.white.withValues(alpha: 0.03)
+          : Colors.black.withValues(alpha: 0.03),
+      buttonForeground: const Color(0xFF1A1710),
+    );
+  }
 }
 
 class _ProfileHistoryMetrics {

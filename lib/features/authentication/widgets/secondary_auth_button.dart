@@ -14,6 +14,9 @@ class SecondaryAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onSurface = colorScheme.onSurface;
+
     final borderRadius = BorderRadius.circular(8);
 
     return Material(
@@ -28,21 +31,21 @@ class SecondaryAuthButton extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF121316),
+            color: colorScheme.surface,
             borderRadius: borderRadius,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: onSurface.withValues(alpha: 0.1)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: Colors.white.withValues(alpha: 0.8)),
+              Icon(icon, size: 20, color: onSurface.withValues(alpha: 0.82)),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: onSurface.withValues(alpha: 0.86),
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.6,

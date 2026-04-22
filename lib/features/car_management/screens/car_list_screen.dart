@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
+import '../../../shared/services/service_locator.dart';
 import '../models/car_model.dart';
+import '../services/car_service.dart';
 import '../widgets/car_list_item.dart';
 
 class CarListScreen extends StatefulWidget {
@@ -13,44 +15,55 @@ class CarListScreen extends StatefulWidget {
 }
 
 class _CarListScreenState extends State<CarListScreen> {
-  final List<CarModel> _cars = [
-    const CarModel(
-      id: '1',
-      name: 'Toyota Camry 2024',
-      brand: 'Toyota',
-      model: 'Camry',
-      year: 2024,
-      color: 'Đen',
-      price: 1250000000,
-      mileage: 0,
-      status: CarStatus.available,
-    ),
-    const CarModel(
-      id: '2',
-      name: 'Honda Civic 2023',
-      brand: 'Honda',
-      model: 'Civic',
-      year: 2023,
-      color: 'Trắng',
-      price: 870000000,
-      mileage: 5000,
-      status: CarStatus.available,
-    ),
-    const CarModel(
-      id: '3',
-      name: 'Mercedes C300 2024',
-      brand: 'Mercedes',
-      model: 'C300',
-      year: 2024,
-      color: 'Bạc',
-      price: 2100000000,
-      mileage: 0,
-      status: CarStatus.sold,
-    ),
-  ];
+  final CarService _carService = getIt<CarService>();
+  List<CarModel> _cars = [];
 
   String _searchQuery = '';
   CarStatus? _filterStatus;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCars();
+  }
+
+  Future<void> _loadCars({bool showLoader = true}) async {
+    if (showLoader) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
+    try {
+      final cars = await _carService.fetchCars();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cars = cars;
+        _errorMessage = null;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = 'Không thể tải danh sách xe. Vui lòng thử lại.';
+      });
+    } finally {
+      if (mounted && showLoader) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   List<CarModel> get _filteredCars {
     return _cars.where((car) {
@@ -69,6 +82,10 @@ class _CarListScreenState extends State<CarListScreen> {
       appBar: AppBar(
         title: const Text('Danh sách xe'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadCars,
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
@@ -100,28 +117,55 @@ class _CarListScreenState extends State<CarListScreen> {
           ),
           // Car list
           Expanded(
-            child: _filteredCars.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(_errorMessage!, textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadCars,
+                            child: const Text('Thử lại'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _filteredCars.isEmpty
                 ? const Center(
                     child: Text('Không tìm thấy xe nào'),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _filteredCars.length,
-                    itemBuilder: (context, index) {
-                      final car = _filteredCars[index];
-                      return CarListItem(
-                        car: car,
-                        onTap: () {
-                          context.push('/cars/${car.id}');
-                        },
-                      );
-                    },
+                : RefreshIndicator(
+                    onRefresh: () => _loadCars(showLoader: false),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _filteredCars.length,
+                      itemBuilder: (context, index) {
+                        final car = _filteredCars[index];
+                        return CarListItem(
+                          car: car,
+                          onTap: () {
+                            context.push('/cars/${car.id}');
+                          },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(RouteNames.addCar),
+        onPressed: () async {
+          await context.push(RouteNames.addCar);
+          if (mounted) {
+            _loadCars(showLoader: false);
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );

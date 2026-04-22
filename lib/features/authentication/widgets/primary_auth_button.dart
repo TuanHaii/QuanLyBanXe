@@ -13,6 +13,16 @@ class PrimaryAuthButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final startColor = isDark ? colorScheme.primary : colorScheme.primaryContainer;
+    final endColor = isDark
+        ? colorScheme.primary.withValues(alpha: 0.82)
+        : colorScheme.primary;
+    final foregroundColor = isDark
+        ? colorScheme.onPrimary
+        : colorScheme.onPrimaryContainer;
+
     final borderRadius = BorderRadius.circular(8);
     return Material(
       color: Colors.transparent,
@@ -32,14 +42,14 @@ class PrimaryAuthButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 borderRadius: borderRadius,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFD0DBE8), Color(0xFFA1B4CA)],
+                gradient: LinearGradient(
+                  colors: [startColor, endColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFA1B4CA).withValues(alpha: 0.2),
+                    color: endColor.withValues(alpha: 0.24),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -47,18 +57,18 @@ class PrimaryAuthButton extends StatelessWidget {
               ),
               child: Center(
                 child: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          color: Color(0xFF12141A),
+                          color: foregroundColor,
                           strokeWidth: 2,
                         ),
                       )
                     : Text(
                         text,
-                        style: const TextStyle(
-                          color: Color(0xFF12141A),
+                        style: TextStyle(
+                          color: foregroundColor,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,

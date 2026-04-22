@@ -15,12 +15,12 @@ class MallScreen extends StatefulWidget {
 }
 
 class _MallScreenState extends State<MallScreen> {
-  static const Color _backgroundColor = Color(0xFF0A0B0E);
-  static const Color _surfaceColor = Color(0xFF15181D);
-  static const Color _surfaceLightColor = Color(0xFF1A1D22);
-  static const Color _accentColor = Color(0xFFD6A93E);
   static const double _horizontalPadding = 14;
   static const double _cardRadius = 16;
+
+  _MallPalette _palette(BuildContext context) {
+    return _MallPalette.fromTheme(Theme.of(context));
+  }
 
   static const Map<String, String> _brandLogoByKey = {
     'toyota': 'assets/icons/brands/toyota.svg',
@@ -164,13 +164,15 @@ class _MallScreenState extends State<MallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _palette(context);
+
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: palette.background,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          color: _accentColor,
-          backgroundColor: _surfaceColor,
+          color: palette.accent,
+          backgroundColor: palette.surface,
           onRefresh: _loadProducts,
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(
@@ -210,6 +212,8 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildHeader() {
+    final palette = _palette(context);
+
     return Row(
       children: [
         Expanded(
@@ -219,7 +223,7 @@ class _MallScreenState extends State<MallScreen> {
               Text(
                 'Khám phá',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: palette.textSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -228,7 +232,7 @@ class _MallScreenState extends State<MallScreen> {
               Text(
                 'Trung Tâm Xe',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: palette.textPrimary,
                   fontWeight: FontWeight.w800,
                   fontSize: 24,
                   height: 1.03,
@@ -239,13 +243,13 @@ class _MallScreenState extends State<MallScreen> {
         ),
         Container(
           decoration: BoxDecoration(
-            color: _surfaceLightColor,
+            color: palette.surfaceSoft,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            border: Border.all(color: palette.cardBorder),
           ),
           child: IconButton(
             onPressed: _loadProducts,
-            icon: const Icon(Icons.tune, color: _accentColor, size: 21),
+            icon: Icon(Icons.tune, color: palette.accent, size: 21),
             padding: const EdgeInsets.all(12),
             constraints: const BoxConstraints.tightFor(width: 46, height: 46),
             tooltip: 'Làm mới',
@@ -256,28 +260,22 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildSearchField() {
+    final palette = _palette(context);
+
     return TextField(
       controller: _searchController,
       onChanged: _filterProducts,
       decoration: InputDecoration(
         hintText: 'Tìm kiếm xe...',
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.46),
+          color: palette.textMuted,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
-        prefixIcon: Icon(
-          Icons.search,
-          size: 20,
-          color: Colors.white.withValues(alpha: 0.56),
-        ),
+        prefixIcon: Icon(Icons.search, size: 20, color: palette.textSecondary),
         suffixIcon: _searchController.text.isNotEmpty
             ? IconButton(
-                icon: Icon(
-                  Icons.close,
-                  size: 18,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
+                icon: Icon(Icons.close, size: 18, color: palette.textSecondary),
                 onPressed: () {
                   _searchController.clear();
                   _filterProducts('');
@@ -285,26 +283,28 @@ class _MallScreenState extends State<MallScreen> {
               )
             : null,
         filled: true,
-        fillColor: _surfaceColor,
+        fillColor: palette.surface,
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderSide: BorderSide(color: palette.cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderSide: BorderSide(color: palette.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _accentColor, width: 1.1),
+          borderSide: BorderSide(color: palette.accent, width: 1.1),
         ),
       ),
-      style: const TextStyle(color: Colors.white, fontSize: 14.5),
+      style: TextStyle(color: palette.textPrimary, fontSize: 14.5),
     );
   }
 
   Widget _buildCategoryTabs() {
+    final palette = _palette(context);
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -324,12 +324,10 @@ class _MallScreenState extends State<MallScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? _accentColor : _surfaceColor,
+                  color: isSelected ? palette.accent : palette.surface,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: isSelected
-                        ? _accentColor
-                        : Colors.white.withValues(alpha: 0.08),
+                    color: isSelected ? palette.accent : palette.cardBorder,
                   ),
                 ),
                 child: Row(
@@ -338,13 +336,17 @@ class _MallScreenState extends State<MallScreen> {
                     Icon(
                       category.icon,
                       size: 14,
-                      color: isSelected ? Colors.black : Colors.white70,
+                      color: isSelected
+                          ? palette.accentForeground
+                          : palette.textSecondary,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       category.label,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: isSelected ? Colors.black : Colors.white,
+                        color: isSelected
+                            ? palette.accentForeground
+                            : palette.textPrimary,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -360,14 +362,15 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildHeroBanner() {
+    final palette = _palette(context);
     final imageUrl = _bannerImageUrl;
 
     return Container(
       height: 164,
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(color: palette.cardBorder),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -412,7 +415,7 @@ class _MallScreenState extends State<MallScreen> {
               child: Text(
                 'KHO TRƯNG BÀY',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: _accentColor,
+                  color: palette.accent,
                   fontSize: 10,
                   letterSpacing: 0.7,
                   fontWeight: FontWeight.w700,
@@ -455,8 +458,8 @@ class _MallScreenState extends State<MallScreen> {
                 _showFeatureComingSoon('Danh mục nổi bật sẽ sớm được mở rộng.');
               },
               style: FilledButton.styleFrom(
-                backgroundColor: _accentColor,
-                foregroundColor: Colors.black,
+                backgroundColor: palette.accent,
+                foregroundColor: palette.accentForeground,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 10,
@@ -477,12 +480,14 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildSectionHeader() {
+    final palette = _palette(context);
+
     return Row(
       children: [
         Text(
           'Danh Sách Xe',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.white,
+            color: palette.textPrimary,
             fontWeight: FontWeight.w800,
             fontSize: 29,
             height: 1,
@@ -492,7 +497,7 @@ class _MallScreenState extends State<MallScreen> {
         Text(
           '${_filteredProducts.length} xe',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.white.withValues(alpha: 0.58),
+            color: palette.textSecondary,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -511,11 +516,15 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   List<Widget> _buildContentSlivers(BuildContext context) {
+    final palette = _palette(context);
+
     if (_isLoading) {
-      return const [
+      return [
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(child: CircularProgressIndicator(color: _accentColor)),
+          child: Center(
+            child: CircularProgressIndicator(color: palette.accent),
+          ),
         ),
       ];
     }
@@ -534,14 +543,14 @@ class _MallScreenState extends State<MallScreen> {
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+                  ).textTheme.bodyLarge?.copyWith(color: palette.textSecondary),
                 ),
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _loadProducts,
                   style: FilledButton.styleFrom(
-                    backgroundColor: _accentColor,
-                    foregroundColor: Colors.black,
+                    backgroundColor: palette.accent,
+                    foregroundColor: palette.accentForeground,
                   ),
                   child: const Text('Thử lại'),
                 ),
@@ -564,7 +573,7 @@ class _MallScreenState extends State<MallScreen> {
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+                ).textTheme.bodyLarge?.copyWith(color: palette.textSecondary),
               ),
             ),
           ),
@@ -597,11 +606,13 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildProductCard(MallProduct product) {
+    final palette = _palette(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceColor,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: palette.cardBorder),
       ),
       padding: const EdgeInsets.all(11),
       child: Column(
@@ -634,7 +645,7 @@ class _MallScreenState extends State<MallScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
+              color: palette.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: 15,
               height: 1.15,
@@ -646,7 +657,7 @@ class _MallScreenState extends State<MallScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white70,
+              color: palette.textSecondary,
               fontSize: 12,
               height: 1.2,
             ),
@@ -654,12 +665,12 @@ class _MallScreenState extends State<MallScreen> {
           const Spacer(),
           Row(
             children: [
-              const Icon(Icons.star_rounded, size: 14, color: _accentColor),
+              Icon(Icons.star_rounded, size: 14, color: palette.accent),
               const SizedBox(width: 3),
               Text(
                 product.rating.toStringAsFixed(1),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.82),
+                  color: palette.textPrimary.withValues(alpha: 0.82),
                   fontWeight: FontWeight.w600,
                   fontSize: 11.5,
                 ),
@@ -668,7 +679,7 @@ class _MallScreenState extends State<MallScreen> {
               Text(
                 'Kho: ${product.stock}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.52),
+                  color: palette.textMuted,
                   fontSize: 11.5,
                 ),
               ),
@@ -678,7 +689,7 @@ class _MallScreenState extends State<MallScreen> {
           Text(
             product.priceLabel,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: _accentColor,
+              color: palette.accent,
               fontWeight: FontWeight.w800,
               fontSize: 28,
               height: 1,
@@ -690,11 +701,13 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildBrandLogo(MallProduct product) {
+    final palette = _palette(context);
+
     return Container(
       height: 44,
       width: 44,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
+        color: palette.surfaceSoft,
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(7),
@@ -706,6 +719,8 @@ class _MallScreenState extends State<MallScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final palette = _palette(context);
+
     const navItems = [
       _MallBottomNavItem(icon: Icons.home_outlined, label: 'Trang Chủ'),
       _MallBottomNavItem(icon: Icons.shopping_bag_outlined, label: 'Mall'),
@@ -718,13 +733,8 @@ class _MallScreenState extends State<MallScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF111317),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
-            width: 1,
-          ),
-        ),
+        color: palette.navBackground,
+        border: Border(top: BorderSide(color: palette.navBorder, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -744,12 +754,12 @@ class _MallScreenState extends State<MallScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF191B1F)
+                          ? palette.navSelectedBackground
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(11),
                       border: Border.all(
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.72)
+                            ? palette.navSelectedBorder
                             : Colors.transparent,
                       ),
                     ),
@@ -760,8 +770,8 @@ class _MallScreenState extends State<MallScreen> {
                           item.icon,
                           size: 19,
                           color: isSelected
-                              ? _accentColor
-                              : Colors.white.withValues(alpha: 0.68),
+                              ? palette.accent
+                              : palette.navUnselected,
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -769,8 +779,8 @@ class _MallScreenState extends State<MallScreen> {
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 color: isSelected
-                                    ? _accentColor
-                                    : Colors.white.withValues(alpha: 0.62),
+                                    ? palette.accent
+                                    : palette.navUnselected,
                                 fontWeight: isSelected
                                     ? FontWeight.w700
                                     : FontWeight.w500,
@@ -802,4 +812,68 @@ class _MallBottomNavItem {
   final String label;
 
   const _MallBottomNavItem({required this.icon, required this.label});
+}
+
+class _MallPalette {
+  final Color background;
+  final Color surface;
+  final Color surfaceSoft;
+  final Color accent;
+  final Color accentForeground;
+  final Color cardBorder;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color navBackground;
+  final Color navBorder;
+  final Color navSelectedBackground;
+  final Color navSelectedBorder;
+  final Color navUnselected;
+
+  const _MallPalette({
+    required this.background,
+    required this.surface,
+    required this.surfaceSoft,
+    required this.accent,
+    required this.accentForeground,
+    required this.cardBorder,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.navBackground,
+    required this.navBorder,
+    required this.navSelectedBackground,
+    required this.navSelectedBorder,
+    required this.navUnselected,
+  });
+
+  factory _MallPalette.fromTheme(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return _MallPalette(
+      background: isDark ? const Color(0xFF0A0B0E) : const Color(0xFFF6F8FC),
+      surface: isDark ? const Color(0xFF15181D) : Colors.white,
+      surfaceSoft: isDark ? const Color(0xFF1A1D22) : const Color(0xFFF0F3F8),
+      accent: const Color(0xFFD6A93E),
+      accentForeground: isDark ? Colors.black : const Color(0xFF2D230F),
+      cardBorder: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.black.withValues(alpha: 0.08),
+      textPrimary: onSurface,
+      textSecondary: onSurface.withValues(alpha: isDark ? 0.65 : 0.72),
+      textMuted: onSurface.withValues(alpha: isDark ? 0.52 : 0.58),
+      navBackground: isDark ? const Color(0xFF111317) : const Color(0xFFF9FBFF),
+      navBorder: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.black.withValues(alpha: 0.08),
+      navSelectedBackground: isDark
+          ? const Color(0xFF191B1F)
+          : const Color(0xFFF3E8CD),
+      navSelectedBorder: isDark
+          ? Colors.white.withValues(alpha: 0.72)
+          : const Color(0xFFC89B34).withValues(alpha: 0.52),
+      navUnselected: onSurface.withValues(alpha: isDark ? 0.68 : 0.62),
+    );
+  }
 }
