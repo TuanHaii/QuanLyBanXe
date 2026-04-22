@@ -10,6 +10,8 @@
 #include <flutter/plugin_registry.h>
 
 // Registers Flutter plugins.
+// Định nghĩa hàm/phương thức
+// Định nghĩa hàm/phương thức
 void RegisterPlugins(flutter::PluginRegistry* registry);
 
 #endif  // GENERATED_PLUGIN_REGISTRANT_
