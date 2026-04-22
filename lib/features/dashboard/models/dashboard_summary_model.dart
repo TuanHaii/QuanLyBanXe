@@ -1,37 +1,20 @@
-// ============================================================
-// FILE: dashboard_summary_model.dart
-// MÔ TẢ: Model chứa dữ liệu tổng quan dashboard.
-//        Parse từ JSON response của API GET /api/dashboard/summary.
-//        Lưu thông tin: Tổng xe, Bán được, Trong kho, Doanh thu,
-//        xu hướng, và danh sách giao dịch gần đây.
-// ============================================================
-
 import 'package:equatable/equatable.dart';
 
-/// Class này đại diện cho dữ liệu tổng quan dashboard.
-/// Được parse từ API response và dùng để hiển thị 4 StatCard + giao dịch gần đây.
 class DashboardSummaryModel extends Equatable {
   // Tổng số xe có trong kho
   final int totalCars;
-
   // Số xe đã bán cho khách hàng
   final int carsSold;
-
   // Số xe còn trong kho (= totalCars - carsSold)
   final int inStock;
-
   // Tổng doanh thu (số tiền bán hàng) theo đơn vị là VND (Việt Nam Đồng)
   final double totalRevenue;
-
   // Xu hướng doanh thu so với kỳ trước (vd: "+15%", "-5%")
   final String revenueTrend;
-
   // Nhãn doanh thu định dạng (vd: "1.2B", "500M" cho dễ đọc)
   final String totalRevenueLabel;
-
   // Xu hướng sales (số lần bán) so với kỳ trước (vd: "+10%")
   final String salesTrend;
-
   // Danh sách các giao dịch gần đây (bán xe lần cuối)
   final List<RecentTransactionModel> recentTransactions;
 
@@ -47,18 +30,29 @@ class DashboardSummaryModel extends Equatable {
   });
 
   factory DashboardSummaryModel.fromJson(Map<String, dynamic> json) {
-    final summary = json['summary'] as Map<String, dynamic>? ?? const {};
-    final transactions =
-        json['recent_transactions'] as List<dynamic>? ?? const [];
+    // 1. Trích xuất đúng object summary từ JSON
+    final summary = json['summary'] as Map<String, dynamic>? ?? {};
+    final transactions = json['recent_transactions'] as List<dynamic>? ?? [];
 
     return DashboardSummaryModel(
-      totalCars: (summary['totalCars'] as num?)?.toInt() ?? 0,
-      carsSold: (summary['carsSold'] as num?)?.toInt() ?? 0,
-      inStock: (summary['inStock'] as num?)?.toInt() ?? 0,
-      totalRevenue: (summary['totalRevenue'] as num?)?.toDouble() ?? 0,
-      revenueTrend: summary['revenueTrend'] as String? ?? '0%',
-      totalRevenueLabel: summary['totalRevenueLabel'] as String? ?? '0',
-      salesTrend: summary['salesTrend'] as String? ?? '0%',
+      // 2.
+      totalCars: summary['totalCars'] is int
+          ? summary['totalCars']
+          : int.tryParse(summary['totalCars']?.toString() ?? '0') ?? 0,
+
+      carsSold: summary['carsSold'] is int
+          ? summary['carsSold']
+          : int.tryParse(summary['carsSold']?.toString() ?? '0') ?? 0,
+
+      inStock: summary['inStock'] is int
+          ? summary['inStock']
+          : int.tryParse(summary['inStock']?.toString() ?? '0') ?? 0,
+
+      totalRevenue: (summary['totalRevenue'] as num?)?.toDouble() ?? 0.0,
+      revenueTrend: summary['revenueTrend']?.toString() ?? '+0%',
+      totalRevenueLabel: summary['totalRevenueLabel']?.toString() ?? '0',
+      salesTrend: summary['salesTrend']?.toString() ?? '+0%',
+
       recentTransactions: transactions
           .whereType<Map<String, dynamic>>()
           .map(RecentTransactionModel.fromJson)
@@ -98,12 +92,17 @@ class RecentTransactionModel extends Equatable {
 
   factory RecentTransactionModel.fromJson(Map<String, dynamic> json) {
     return RecentTransactionModel(
-      id: json['id'] as String? ?? '',
-      customerName: json['customer_name'] as String? ?? '',
-      carName: json['car_name'] as String? ?? '',
-      amount: json['amount'] as String? ?? '',
-      timeAgo: json['time_ago'] as String? ?? '',
-      status: json['status'] as String? ?? '',
+      // 🛠 FIX: Luôn dùng .toString() thay vì 'as String?' để chống crash
+      id: json['id']?.toString() ?? '',
+      carName: json['car_name']?.toString() ?? '',
+      customerName: json['customer_name']?.toString() ?? '',
+      amount: json['amount']?.toString() ?? '0',
+
+      // 🛠 FIX: Backend đang trả về key 'date' chứ không phải 'time_ago'
+      timeAgo: json['date']?.toString() ?? json['time_ago']?.toString() ?? '',
+
+      // 🛠 FIX: BE trả về số 0, 1, 2 nên phải dùng .toString()
+      status: json['status']?.toString() ?? '0',
     );
   }
 
