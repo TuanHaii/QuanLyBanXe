@@ -87,7 +87,6 @@ class UserModel {
     return DateTime.tryParse(value.toString());
   }
 
-
   /// Hàm này chuyển UserModel thành Map để lưu vào SharedPreferences (local storage).
   /// Khi đọc lại từ storage, ta dùng fromJson() để khôi phục object.
   Map<String, dynamic> toJson() {
