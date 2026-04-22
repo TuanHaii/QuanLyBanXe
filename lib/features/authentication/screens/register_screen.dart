@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
-import '../../../shared/themes/app_colors.dart';
 import '../../../shared/services/service_locator.dart';
 import '../services/auth_service.dart';
-import '../widgets/precision_text_field.dart';
-import '../widgets/precision_primary_button.dart';
-import '../widgets/precision_secondary_button.dart';
+import '../widgets/auth_header.dart';
+import '../widgets/auth_text_field.dart';
+import '../widgets/primary_auth_button.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -16,52 +16,98 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
   Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) {
+      return;
+    }
+
+    final fullName = _fullNameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (fullName.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please complete all fields.')),
+      );
+      return;
+    }
+
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Email format is invalid.')));
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 6 characters.'),
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password confirmation does not match.')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final authService = getIt<AuthService>();
       await authService.register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        phone: _phoneController.text.trim(),
+        name: fullName,
+        email: email,
+        password: password,
+        phone: phone,
       );
 
-      if (mounted) {
-        context.go(RouteNames.dashboard);
+      if (!mounted) {
+        return;
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đăng ký thất bại: ${e.toString()}'),
-            backgroundColor: AppColors.error,
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Đăng ký thành công.'),
+            behavior: SnackBarBehavior.floating,
           ),
         );
+      context.go(RouteNames.dashboard);
+    } catch (error) {
+      if (!mounted) {
+        return;
       }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -70,157 +116,145 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onSurface = colorScheme.onSurface;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Đăng ký'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'Create Account',
+          style: TextStyle(color: onSurface),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 24),
-                // Name field
-                PrecisionTextField(
-                  controller: _nameController,
-                  label: 'Họ và tên',
-                  hint: 'Nhập họ và tên của bạn',
-                  prefixIcon: Icons.person_outline,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập họ và tên';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Email field
-                PrecisionTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  hint: 'Nhập email của bạn',
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                        .hasMatch(value)) {
-                      return 'Email không hợp lệ';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Phone field
-                PrecisionTextField(
-                  controller: _phoneController,
-                  label: 'Số điện thoại',
-                  hint: 'Nhập số điện thoại của bạn',
-                  keyboardType: TextInputType.phone,
-                  prefixIcon: Icons.phone_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập số điện thoại';
-                    }
-                    if (!RegExp(r'^[0-9]{10,11}$').hasMatch(value)) {
-                      return 'Số điện thoại không hợp lệ';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Password field
-                PrecisionTextField(
-                  controller: _passwordController,
-                  label: 'Mật khẩu',
-                  hint: 'Nhập mật khẩu của bạn',
-                  obscureText: _obscurePassword,
-                  prefixIcon: Icons.lock_outline,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              const AuthHeader(),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: onSurface.withValues(alpha: 0.08),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập mật khẩu';
-                    }
-                    if (value.length < 6) {
-                      return 'Mật khẩu phải có ít nhất 6 ký tự';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
-                // Confirm password field
-                PrecisionTextField(
-                  controller: _confirmPasswordController,
-                  label: 'Xác nhận mật khẩu',
-                  hint: 'Nhập lại mật khẩu của bạn',
-                  obscureText: _obscureConfirmPassword,
-                  prefixIcon: Icons.lock_outline,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() =>
-                          _obscureConfirmPassword = !_obscureConfirmPassword);
-                    },
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Vui lòng xác nhận mật khẩu';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Mật khẩu không khớp';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-                // Register button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegister,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text('Đăng ký'),
-                ),
-                const SizedBox(height: 24),
-                // Login link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Đã có tài khoản?'),
-                    TextButton(
-                      onPressed: () => context.pop(),
-                      child: const Text('Đăng nhập'),
+                    Text(
+                      'Register',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Fill your details to create a secure account.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: onSurface.withValues(alpha: 0.68),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    AuthTextField(
+                      label: 'FULL NAME',
+                      prefixIcon: Icons.person_outline,
+                      controller: _fullNameController,
+                    ),
+                    const SizedBox(height: 18),
+                    AuthTextField(
+                      label: 'EMAIL',
+                      prefixIcon: Icons.email_outlined,
+                      controller: _emailController,
+                    ),
+                    const SizedBox(height: 18),
+                    AuthTextField(
+                      label: 'PHONE',
+                      prefixIcon: Icons.phone_outlined,
+                      controller: _phoneController,
+                    ),
+                    const SizedBox(height: 18),
+                    AuthTextField(
+                      label: 'SECURITY KEY',
+                      prefixIcon: Icons.lock_outline,
+                      controller: _passwordController,
+                      isPassword: true,
+                      obscureText: _obscurePassword,
+                      onToggleVisibility: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    AuthTextField(
+                      label: 'CONFIRM KEY',
+                      prefixIcon: Icons.lock_person_outlined,
+                      controller: _confirmPasswordController,
+                      isPassword: true,
+                      obscureText: _obscureConfirmPassword,
+                      onToggleVisibility: () {
+                        setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 28),
+                    PrimaryAuthButton(
+                      text: 'CREATE ACCOUNT',
+                      onTap: _handleRegister,
+                      isLoading: _isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Already have an account?',
+                          style: TextStyle(
+                            color: onSurface.withValues(alpha: 0.74),
+                            fontSize: 12,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => context.pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: const Text(
+                            'Sign in',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

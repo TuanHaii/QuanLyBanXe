@@ -7,7 +7,9 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String baseUrl = 'https://api.example.com';
+  // Update this value for the local development environment.
+  // On Android emulator, 10.0.2.2 maps to the host machine.
+  static const String baseUrl = 'http://10.0.2.2:3000/api';
   static const int connectionTimeout = 30000;
   static const int receiveTimeout = 30000;
 
@@ -39,9 +41,14 @@ class RouteNames {
   static const String carDetail = '/cars/:id';
   static const String addCar = '/cars/add';
   static const String editCar = '/cars/:id/edit';
+  static const String mall = '/mall';
+  static const String notification = '/notifications';
   static const String sales = '/sales';
   static const String saleDetail = '/sales/:id';
   static const String profile = '/profile';
+  static const String profileInfo = '/profile/info';
+  static const String profileSecurity = '/profile/security';
+  static const String profileHistory = '/profile/history';
   static const String settings = '/settings';
 }
 

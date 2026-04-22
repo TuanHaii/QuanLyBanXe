@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/car_model.dart';
+import '../../../shared/themes/app_colors.dart';
 
 class CarListItem extends StatelessWidget {
   final CarModel car;
@@ -94,8 +95,7 @@ class CarListItem extends StatelessWidget {
                           ),
                           child: Text(
                             car.statusText,
-                            style: TextStyle(
-                              fontSize: 12,
+                            style: AppTextStyles.labelMedium.copyWith(
                               color: _getStatusColor(car.status),
                               fontWeight: FontWeight.w500,
                             ),

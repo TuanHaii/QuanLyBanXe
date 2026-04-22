@@ -29,6 +29,10 @@ class _SplashScreenState extends State<SplashScreen> {
     final authService = getIt<AuthService>();
     await authService.initializeAuth();
 
+    if (!mounted) {
+      return;
+    }
+
     if (authService.isLoggedIn) {
       context.go(RouteNames.dashboard);
     } else {

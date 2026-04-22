@@ -45,6 +45,24 @@ class AuthService {
     apiService.setAuthToken(token);
   }
 
+  Map<String, dynamic> _extractUserData(Map<String, dynamic> responseBody) {
+    final directUser = responseBody['user'];
+    if (directUser is Map<String, dynamic>) {
+      return directUser;
+    }
+
+    final data = responseBody['data'];
+    if (data is Map<String, dynamic> && data['id'] != null) {
+      return data;
+    }
+
+    if (responseBody['id'] != null) {
+      return responseBody;
+    }
+
+    throw Exception('Không thể đọc dữ liệu người dùng từ backend.');
+  }
+
   /// Login with email and password
   Future<UserModel> login({
     required String email,
@@ -69,7 +87,7 @@ class AuthService {
 
       final data = response.data as Map<String, dynamic>;
       final token = data['token'] as String;
-      final userData = data['user'] as Map<String, dynamic>;
+      final userData = _extractUserData(data);
 
       await _saveAuthSession(token: token, userData: userData);
 
@@ -101,27 +119,13 @@ class AuthService {
 
       final data = response.data as Map<String, dynamic>;
       final token = data['token'] as String;
-      final userData = data['user'] as Map<String, dynamic>;
+      final userData = _extractUserData(data);
 
       await _saveAuthSession(token: token, userData: userData);
 
       return UserModel.fromJson(userData);
     } catch (e) {
-      final user = UserModel(
-        id: 'mock-${DateTime.now().millisecondsSinceEpoch}',
-        name: name,
-        email: email.trim().toLowerCase(),
-        phone: phone,
-        role: 'user',
-        createdAt: DateTime.now(),
-      );
-
-      await _saveAuthSession(
-        token: 'mock-token-${user.id}',
-        userData: user.toJson(),
-      );
-
-      return user;
+      throw Exception('Đăng ký thất bại. Vui lòng kiểm tra backend và thử lại.');
     }
   }
 
@@ -166,7 +170,16 @@ class AuthService {
   /// Update user profile
   Future<UserModel> updateProfile(Map<String, dynamic> data) async {
     final response = await apiService.put('/auth/profile', data: data);
-    final userData = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final userData = _extractUserData(body);
+    await storageService.saveUserData(userData);
+    return UserModel.fromJson(userData);
+  }
+
+  Future<UserModel> fetchProfile() async {
+    final response = await apiService.get('/auth/profile');
+    final body = response.data as Map<String, dynamic>;
+    final userData = _extractUserData(body);
     await storageService.saveUserData(userData);
     return UserModel.fromJson(userData);
   }

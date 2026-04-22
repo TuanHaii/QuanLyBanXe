@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/services/service_locator.dart';
 import '../../../shared/themes/app_colors.dart';
+import '../services/car_service.dart';
 
 class AddCarScreen extends StatefulWidget {
   const AddCarScreen({super.key});
@@ -10,6 +12,7 @@ class AddCarScreen extends StatefulWidget {
 }
 
 class _AddCarScreenState extends State<AddCarScreen> {
+  final CarService _carService = getIt<CarService>();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _brandController = TextEditingController();
@@ -46,8 +49,21 @@ class _AddCarScreenState extends State<AddCarScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Save car to API
-      await Future.delayed(const Duration(seconds: 1));
+      await _carService.createCar({
+        'name': _nameController.text.trim(),
+        'brand': _brandController.text.trim(),
+        'model': _modelController.text.trim(),
+        'year': int.parse(_yearController.text.trim()),
+        'color': _colorController.text.trim(),
+        'price': double.parse(_priceController.text.trim()),
+        'mileage': int.tryParse(_mileageController.text.trim()) ?? 0,
+        'description': _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        'fuel_type': _fuelType,
+        'transmission': _transmission,
+        'status': 'available',
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -56,7 +72,7 @@ class _AddCarScreenState extends State<AddCarScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
@@ -100,18 +116,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                     // TODO: Pick images
                   },
                   borderRadius: BorderRadius.circular(12),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.add_photo_alternate_outlined,
                         size: 48,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Thêm hình ảnh',
-                        style: TextStyle(color: Colors.grey),
+                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                       ),
                     ],
                   ),
