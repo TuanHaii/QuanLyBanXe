@@ -3,8 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
 import '../../../shared/themes/app_colors.dart';
-import '../../../shared/services/service_locator.dart';
-import '../../authentication/services/auth_service.dart';
 import '../widgets/stat_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -119,13 +117,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildTopBarButton(
                   metrics: metrics,
                   icon: Icons.notifications_none_rounded,
-                  onTap: _showNotifications,
+                  onTap: () => context.go(RouteNames.notification),
                 ),
                 SizedBox(width: metrics.px(6)),
                 _buildTopBarButton(
                   metrics: metrics,
                   icon: Icons.person_outline_rounded,
-                  onTap: _handleLogout,
+                  onTap: () => context.go(RouteNames.profile),
                 ),
               ],
             ),
@@ -577,10 +575,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context.go(RouteNames.mall);
         return;
       case 2:
-        _showNotifications();
+        context.go(RouteNames.notification);
         return;
       case 3:
-        _showFeatureComingSoon('Trang cá nhân sẽ sớm được cập nhật.');
+        context.go(RouteNames.profile);
         return;
     }
   }
@@ -589,40 +587,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _showNotifications() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Chưa có thông báo mới!')));
-  }
-
-  Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có chắc muốn đăng xuất?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Đăng xuất'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      final authService = getIt<AuthService>();
-      await authService.logout();
-      if (mounted) {
-        context.go(RouteNames.login);
-      }
-    }
   }
 }
 

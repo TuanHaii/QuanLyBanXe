@@ -42,9 +42,13 @@ class RouteNames {
   static const String addCar = '/cars/add';
   static const String editCar = '/cars/:id/edit';
   static const String mall = '/mall';
+  static const String notification = '/notifications';
   static const String sales = '/sales';
   static const String saleDetail = '/sales/:id';
   static const String profile = '/profile';
+  static const String profileInfo = '/profile/info';
+  static const String profileSecurity = '/profile/security';
+  static const String profileHistory = '/profile/history';
   static const String settings = '/settings';
 }
 

@@ -2,7 +2,6 @@ import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
 import '../../features/authentication/screens/login_screen.dart';
-import '../../features/authentication/screens/register_screen.dart';
 import '../../features/authentication/screens/splash_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/car_management/screens/car_list_screen.dart';
@@ -11,6 +10,11 @@ import '../../features/car_management/screens/add_car_screen.dart';
 import '../../features/mall/screens/mall_screen.dart';
 import '../../features/mall/screens/sales_screen.dart';
 import '../../features/mall/screens/sale_detail_screen.dart';
+import '../../features/notification/screens/notification_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/profile_info_screen.dart';
+import '../../features/profile/screens/profile_security_screen.dart';
+import '../../features/profile/screens/profile_history_screen.dart';
 
 class RouterService {
   RouterService._();
@@ -70,6 +74,31 @@ class RouterService {
         path: RouteNames.mall,
         name: 'mall',
         builder: (context, state) => const MallScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.notification,
+        name: 'notification',
+        builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.profile,
+        name: 'profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.profileInfo,
+        name: 'profileInfo',
+        builder: (context, state) => const ProfileInfoScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.profileSecurity,
+        name: 'profileSecurity',
+        builder: (context, state) => const ProfileSecurityScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.profileHistory,
+        name: 'profileHistory',
+        builder: (context, state) => const ProfileHistoryScreen(),
       ),
       // Sales Routes
       GoRoute(
