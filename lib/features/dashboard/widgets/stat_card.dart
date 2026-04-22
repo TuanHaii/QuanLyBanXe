@@ -141,13 +141,20 @@ class ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBackground = isDark ? const Color(0xFF1A1C20) : Colors.white;
-    final cardBorder = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.black.withValues(alpha: 0.08);
-    final textColor = colorScheme.onSurface.withValues(
-      alpha: isDark ? 0.76 : 0.8,
-    );
+    // Đổi sang nền đặc để tránh hiệu ứng mờ làm giảm độ rõ của chữ.
+    final cardBackground = isDark ? const Color(0xFF1C2026) : Colors.white;
+    // Giữ điểm nhấn bằng viền pha accent nhưng không làm nhiễu nội dung.
+    final cardBorder = Color.lerp(
+      isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.black.withValues(alpha: 0.08),
+      accentColor.withValues(alpha: isDark ? 0.36 : 0.24),
+      0.35,
+    )!;
+    // Tăng tương phản chữ để đọc rõ trên cả nền sáng và tối.
+    final textColor = isDark
+        ? Colors.white.withValues(alpha: 0.95)
+        : colorScheme.onSurface.withValues(alpha: 0.92);
 
     double sp(double value) => value * uiScale;
     double fs(double value) => value * textScale;
@@ -162,8 +169,17 @@ class ActionCard extends StatelessWidget {
         highlightColor: accentColor.withValues(alpha: 0.03),
         child: Container(
           decoration: BoxDecoration(
+            color: cardBackground,
             borderRadius: BorderRadius.circular(sp(15)),
             border: Border.all(color: cardBorder, width: 1),
+            boxShadow: [
+              BoxShadow(
+                // Giảm độ loang bóng để chữ và icon là trọng tâm hiển thị.
+                color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
+                blurRadius: sp(12),
+                offset: Offset(0, sp(6)),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -171,7 +187,8 @@ class ActionCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(sp(10)),
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.07),
+                  // Nền icon vừa đủ nổi để dẫn mắt nhưng không làm lóa phần chữ.
+                  color: accentColor.withValues(alpha: isDark ? 0.18 : 0.12),
                   borderRadius: BorderRadius.circular(sp(13)),
                   border: Border.all(
                     color: accentColor.withValues(alpha: 0.42),
@@ -182,12 +199,13 @@ class ActionCard extends StatelessWidget {
               ),
               SizedBox(height: sp(9)),
               Text(
-                title.toUpperCase(),
+                // Giữ nguyên chữ thường để tên hành động dễ đọc hơn.
+                title,
                 style: AppTextStyles.labelMedium.copyWith(
                   color: textColor,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.7,
-                  fontSize: fs(11),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.25,
+                  fontSize: fs(11.8),
                 ),
               ),
             ],

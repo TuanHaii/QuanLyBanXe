@@ -1004,6 +1004,11 @@ class _QuickActionSheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _QuickActionSheetPalette.fromTheme(Theme.of(context));
+    final topBackgroundTint = Color.lerp(
+      palette.background,
+      accentColor,
+      palette.isDark ? 0.18 : 0.09,
+    )!;
 
     return SafeArea(
       top: false,
@@ -1019,7 +1024,7 @@ class _QuickActionSheetScaffold extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                accentColor.withValues(alpha: palette.isDark ? 0.10 : 0.08),
+                topBackgroundTint,
                 palette.background,
               ],
             ),

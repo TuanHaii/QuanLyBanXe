@@ -469,6 +469,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      barrierColor: Colors.transparent,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => const InventoryQuickActionSheet(),
     );
@@ -479,6 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      barrierColor: Colors.transparent,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => const SalesQuickActionSheet(),
     );
@@ -489,6 +491,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      barrierColor: Colors.transparent,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => const ReportQuickActionSheet(),
     );
@@ -501,6 +504,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      barrierColor: Colors.transparent,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => SupportQuickActionSheet(
         initialName: user?.name ?? '',
