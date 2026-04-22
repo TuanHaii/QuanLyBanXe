@@ -74,41 +74,55 @@ class _LoginScreenState extends State<LoginScreen>
     _animationController.forward();
   }
 
-  Future<void> _handleLogin() async {
-    if (_isLoading) {
-      return;
-    }
+  // -------------------------------------------------------
+  // HÀM: _handleLogin()
+  // Được gọi khi người dùng nhấn nút "SIGN IN"
+  // Luồng xử lý:
+  //   1. Hiện loading spinner (isLoading = true)
+  //   2. Gọi AuthService.login() → gọi API POST /api/auth/login
+  //   3. Nếu thành công → điều hướng sang Dashboard
+  //   4. Nếu thất bại  → hiện SnackBar thông báo lỗi
+  //   5. Dù thành công hay thất bại → tắt loading (isLoading = false)
+  // -------------------------------------------------------
+  // Khai báo 1 biến để bật/tắt hiệu ứng loading vòng tròn
+  bool isLoading = false;
 
-    setState(() => _isLoading = true);
+  // Hàm này gắn vào nút onPressed của nút Đăng Nhập
+  Future<void> xuLyDangNhap() async {
+    // 1. Bật loading lên
+    setState(() {
+      isLoading = true;
+    });
 
     try {
+      // 2. Lấy cái AuthService từ ServiceLocator (getIt)
       final authService = getIt<AuthService>();
+
+      // 3. Gọi hàm login bên service
       await authService.login(
-        email: _emailController.text,
-        password: _passwordController.text,
+        email: _emailController.text, // Lấy chữ từ ô nhập email
+        password: _passwordController.text, // Lấy chữ từ ô nhập pass
       );
 
-      if (!mounted) {
-        return;
-      }
-
-      context.go(RouteNames.dashboard);
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      // 4. Nếu code chạy xuống được đây nghĩa là không bị lỗi -> Đăng nhập thành công!
+      // Chuyển sang màn hình Dashboard
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
+      // Thay bằng lệnh chuyển trang của bạn (Navigator hoặc GoRouter)
+      // context.go('/dashboard');
+    } catch (e) {
+      // Nếu có lỗi (sai pass, mất mạng), code sẽ nhảy vào đây
+      // Bật Dialog hoặc SnackBar thông báo lỗi cho người dùng
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
     } finally {
+      // Dù thành công hay thất bại thì cũng phải tắt loading đi
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          isLoading = false;
+        });
       }
     }
   }
@@ -219,13 +233,17 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
           const SizedBox(height: 32),
+          // Trường nhập Email — dùng fieldKey 'email_field' để flutter driver tìm ô input thật
           AuthTextField(
+            fieldKey: const ValueKey('email_field'),
             label: 'Email',
             prefixIcon: Icons.email_outlined,
             controller: _emailController,
           ),
           const SizedBox(height: 20),
+          // Trường nhập mật khẩu — dùng fieldKey 'password_field' để flutter driver tìm ô input thật
           AuthTextField(
+            fieldKey: const ValueKey('password_field'),
             label: 'SECURITY KEY',
             prefixIcon: Icons.lock_outline,
             controller: _passwordController,
@@ -257,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen>
           const SizedBox(height: 32),
           PrimaryAuthButton(
             text: 'SIGN IN',
-            onTap: _handleLogin,
+            onTap: xuLyDangNhap,
             isLoading: _isLoading,
           ),
           const SizedBox(height: 32),

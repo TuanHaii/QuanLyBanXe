@@ -19,7 +19,7 @@ class _CarListScreenState extends State<CarListScreen> {
   List<CarModel> _cars = [];
 
   String _searchQuery = '';
-  CarStatus? _filterStatus;
+  bool? _filterStatus;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -67,11 +67,11 @@ class _CarListScreenState extends State<CarListScreen> {
 
   List<CarModel> get _filteredCars {
     return _cars.where((car) {
-      final matchesSearch = car.name
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
-          car.brand.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesStatus = _filterStatus == null || car.status == _filterStatus;
+      final matchesSearch = car.searchIndex.contains(
+        _searchQuery.toLowerCase(),
+      );
+      final matchesStatus =
+          _filterStatus == null || car.trangThai == _filterStatus;
       return matchesSearch && matchesStatus;
     }).toList();
   }
@@ -82,10 +82,7 @@ class _CarListScreenState extends State<CarListScreen> {
       appBar: AppBar(
         title: const Text('Danh sách xe'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadCars,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadCars),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
@@ -137,9 +134,7 @@ class _CarListScreenState extends State<CarListScreen> {
                     ),
                   )
                 : _filteredCars.isEmpty
-                ? const Center(
-                    child: Text('Không tìm thấy xe nào'),
-                  )
+                ? const Center(child: Text('Không tìm thấy xe nào'))
                 : RefreshIndicator(
                     onRefresh: () => _loadCars(showLoader: false),
                     child: ListView.builder(
@@ -150,7 +145,7 @@ class _CarListScreenState extends State<CarListScreen> {
                         return CarListItem(
                           car: car,
                           onTap: () {
-                            context.push('/cars/${car.id}');
+                            context.push('/cars/${car.maXe}');
                           },
                         );
                       },
@@ -182,9 +177,9 @@ class _CarListScreenState extends State<CarListScreen> {
           children: [
             Text(
               'Lọc theo trạng thái',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -199,26 +194,18 @@ class _CarListScreenState extends State<CarListScreen> {
                   },
                 ),
                 FilterChip(
-                  label: const Text('Còn hàng'),
-                  selected: _filterStatus == CarStatus.available,
+                  label: const Text('Đang bán'),
+                  selected: _filterStatus == true,
                   onSelected: (_) {
-                    setState(() => _filterStatus = CarStatus.available);
+                    setState(() => _filterStatus = true);
                     Navigator.pop(context);
                   },
                 ),
                 FilterChip(
-                  label: const Text('Đã bán'),
-                  selected: _filterStatus == CarStatus.sold,
+                  label: const Text('Ngừng bán'),
+                  selected: _filterStatus == false,
                   onSelected: (_) {
-                    setState(() => _filterStatus = CarStatus.sold);
-                    Navigator.pop(context);
-                  },
-                ),
-                FilterChip(
-                  label: const Text('Đã đặt'),
-                  selected: _filterStatus == CarStatus.reserved,
-                  onSelected: (_) {
-                    setState(() => _filterStatus = CarStatus.reserved);
+                    setState(() => _filterStatus = false);
                     Navigator.pop(context);
                   },
                 ),

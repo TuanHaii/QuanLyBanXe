@@ -59,17 +59,15 @@ class RouterService {
       GoRoute(
         path: RouteNames.splash,
         name: 'splash',
-        pageBuilder: (context, state) => const NoTransitionPage<void>(
-          child: SplashScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            const NoTransitionPage<void>(child: SplashScreen()),
       ),
 
       // Authentication Routes
       GoRoute(
         path: RouteNames.login,
         name: 'login',
-        pageBuilder: (context, state) =>
-            _buildPage(state, const LoginScreen()),
+        pageBuilder: (context, state) => _buildPage(state, const LoginScreen()),
       ),
       GoRoute(
         path: RouteNames.register,
@@ -90,7 +88,8 @@ class RouterService {
       GoRoute(
         path: RouteNames.carList,
         name: 'carList',
-        pageBuilder: (context, state) => _buildPage(state, const CarListScreen()),
+        pageBuilder: (context, state) =>
+            _buildPage(state, const CarListScreen()),
       ),
       GoRoute(
         path: RouteNames.carDetail,
@@ -103,7 +102,16 @@ class RouterService {
       GoRoute(
         path: RouteNames.addCar,
         name: 'addCar',
-        pageBuilder: (context, state) => _buildPage(state, const AddCarScreen()),
+        pageBuilder: (context, state) =>
+            _buildPage(state, const AddCarScreen()),
+      ),
+      GoRoute(
+        path: RouteNames.editCar,
+        name: 'editCar',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return _buildPage(state, AddCarScreen(carId: id));
+        },
       ),
 
       // Mall Route
@@ -121,7 +129,8 @@ class RouterService {
       GoRoute(
         path: RouteNames.profile,
         name: 'profile',
-        pageBuilder: (context, state) => _buildPage(state, const ProfileScreen()),
+        pageBuilder: (context, state) =>
+            _buildPage(state, const ProfileScreen()),
       ),
       GoRoute(
         path: RouteNames.profileInfo,

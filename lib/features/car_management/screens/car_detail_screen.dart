@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/services/service_locator.dart';
 import '../../../shared/themes/app_colors.dart';
@@ -8,10 +9,7 @@ import '../services/car_service.dart';
 class CarDetailScreen extends StatefulWidget {
   final String carId;
 
-  const CarDetailScreen({
-    super.key,
-    required this.carId,
-  });
+  const CarDetailScreen({super.key, required this.carId});
 
   @override
   State<CarDetailScreen> createState() => _CarDetailScreenState();
@@ -24,20 +22,31 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   bool _isDeleting = false;
   String? _errorMessage;
 
+  int? _parsedCarId;
+
   @override
   void initState() {
     super.initState();
+    _parsedCarId = int.tryParse(widget.carId);
     _loadCar();
   }
 
   Future<void> _loadCar() async {
+    if (_parsedCarId == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Mã xe không hợp lệ.';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final car = await _carService.fetchCarById(widget.carId);
+      final car = await _carService.layXeTheoMa(_parsedCarId!);
       if (!mounted) {
         return;
       }
@@ -62,13 +71,17 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   }
 
   Future<void> _deleteCar() async {
+    if (_parsedCarId == null) {
+      return;
+    }
+
     if (_isDeleting) {
       return;
     }
 
     setState(() => _isDeleting = true);
     try {
-      await _carService.deleteCar(widget.carId);
+      await _carService.xoaXe(_parsedCarId!);
       if (!mounted) {
         return;
       }
@@ -106,9 +119,11 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () {
-              // TODO: Navigate to edit car
-            },
+            onPressed: car == null
+                ? null
+                : () {
+                    context.push('/cars/${car.maXe}/edit');
+                  },
           ),
           IconButton(
             icon: const Icon(Icons.delete),
@@ -147,26 +162,25 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                   Container(
                     height: 250,
                     width: double.infinity,
-                    color: Colors.grey[300],
-                    child: car.images.isNotEmpty
-                        ? Image.network(
-                            car.images.first,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(
-                                Icons.directions_car,
-                                size: 100,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          )
-                        : const Center(
-                            child: Icon(
-                              Icons.directions_car,
-                              size: 100,
-                              color: Colors.grey,
-                            ),
-                          ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: .16),
+                          Colors.grey.shade100,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.directions_car_filled_rounded,
+                        size: 120,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -179,12 +193,9 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                car.name,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                car.tenXe,
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                             ),
                             Container(
@@ -194,14 +205,14 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: _getStatusColor(
-                                  car.status,
+                                  car.trangThai,
                                 ).withValues(alpha: .1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                car.statusText,
+                                car.trangThaiText,
                                 style: AppTextStyles.labelMedium.copyWith(
-                                  color: _getStatusColor(car.status),
+                                  color: _getStatusColor(car.trangThai),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -212,7 +223,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         // Price
                         Text(
                           car.formattedPrice,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 color: Theme.of(context).primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -220,50 +232,33 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                         const SizedBox(height: 24),
                         // Details
                         _buildDetailSection(context, 'Thông tin chi tiết', [
-                          _buildDetailRow('Hãng xe', car.brand),
-                          _buildDetailRow('Dòng xe', car.model),
-                          _buildDetailRow('Năm sản xuất', car.year.toString()),
-                          _buildDetailRow('Màu sắc', car.color),
-                          _buildDetailRow('Số km đã đi', '${car.mileage} km'),
-                          if (car.fuelType != null)
-                            _buildDetailRow('Nhiên liệu', car.fuelType!),
-                          if (car.transmission != null)
-                            _buildDetailRow('Hộp số', car.transmission!),
+                          _buildDetailRow('Mã xe', car.maXe.toString()),
+                          _buildDetailRow('Hãng xe', car.tenHangXe),
+                          _buildDetailRow('Loại xe', car.tenLoaiXe),
+                          _buildDetailRow(
+                            'Năm sản xuất',
+                            car.namSanXuat.toString(),
+                          ),
+                          _buildDetailRow('Màu sắc', car.mauSac),
+                          _buildDetailRow('Số khung', car.soKhung),
+                          _buildDetailRow('Số máy', car.soMay),
+                          _buildDetailRow(
+                            'Dung tích',
+                            car.dungTich ?? 'Chưa cập nhật',
+                          ),
+                          _buildDetailRow('Tồn kho', '${car.soLuongTon} xe'),
+                          _buildDetailRow('Mã hãng', car.maHang.toString()),
+                          _buildDetailRow(
+                            'Mã loại xe',
+                            car.maLoaiXe.toString(),
+                          ),
                         ]),
-                        const SizedBox(height: 16),
-                        // Description
-                        if (car.description != null) ...[
-                          Text(
-                            'Mô tả',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            car.description!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-      bottomNavigationBar: car?.status == CarStatus.available
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Navigate to sell car
-                },
-                child: const Text('Bán xe này'),
-              ),
-            )
-          : null,
     );
   }
 
@@ -277,9 +272,9 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Card(
@@ -304,22 +299,17 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
           ),
           Text(
             value,
-            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Color _getStatusColor(CarStatus status) {
-    switch (status) {
-      case CarStatus.available:
-        return Colors.green;
-      case CarStatus.sold:
-        return Colors.red;
-      case CarStatus.reserved:
-        return Colors.orange;
-    }
+  Color _getStatusColor(bool trangThai) {
+    return trangThai ? Colors.green : Colors.grey;
   }
 
   void _showDeleteDialog(BuildContext context) {
@@ -334,9 +324,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
             child: const Text('Hủy'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               Navigator.pop(context);
               _deleteCar();

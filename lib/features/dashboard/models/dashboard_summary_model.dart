@@ -1,13 +1,38 @@
+// ============================================================
+// FILE: dashboard_summary_model.dart
+// MÔ TẢ: Model chứa dữ liệu tổng quan dashboard.
+//        Parse từ JSON response của API GET /api/dashboard/summary.
+//        Lưu thông tin: Tổng xe, Bán được, Trong kho, Doanh thu,
+//        xu hướng, và danh sách giao dịch gần đây.
+// ============================================================
+
 import 'package:equatable/equatable.dart';
 
+/// Class này đại diện cho dữ liệu tổng quan dashboard.
+/// Được parse từ API response và dùng để hiển thị 4 StatCard + giao dịch gần đây.
 class DashboardSummaryModel extends Equatable {
+  // Tổng số xe có trong kho
   final int totalCars;
+
+  // Số xe đã bán cho khách hàng
   final int carsSold;
+
+  // Số xe còn trong kho (= totalCars - carsSold)
   final int inStock;
+
+  // Tổng doanh thu (số tiền bán hàng) theo đơn vị là VND (Việt Nam Đồng)
   final double totalRevenue;
+
+  // Xu hướng doanh thu so với kỳ trước (vd: "+15%", "-5%")
   final String revenueTrend;
+
+  // Nhãn doanh thu định dạng (vd: "1.2B", "500M" cho dễ đọc)
   final String totalRevenueLabel;
+
+  // Xu hướng sales (số lần bán) so với kỳ trước (vd: "+10%")
   final String salesTrend;
+
+  // Danh sách các giao dịch gần đây (bán xe lần cuối)
   final List<RecentTransactionModel> recentTransactions;
 
   const DashboardSummaryModel({
@@ -43,15 +68,15 @@ class DashboardSummaryModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        totalCars,
-        carsSold,
-        inStock,
-        totalRevenue,
-        revenueTrend,
-        totalRevenueLabel,
-        salesTrend,
-        recentTransactions,
-      ];
+    totalCars,
+    carsSold,
+    inStock,
+    totalRevenue,
+    revenueTrend,
+    totalRevenueLabel,
+    salesTrend,
+    recentTransactions,
+  ];
 }
 
 class RecentTransactionModel extends Equatable {
@@ -84,11 +109,11 @@ class RecentTransactionModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        customerName,
-        carName,
-        amount,
-        timeAgo,
-        status,
-      ];
+    id,
+    customerName,
+    carName,
+    amount,
+    timeAgo,
+    status,
+  ];
 }

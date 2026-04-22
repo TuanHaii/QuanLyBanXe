@@ -14,6 +14,11 @@ class AuthTextField extends StatelessWidget {
   onToggleVisibility; // Callback để chuyển đổi trạng thái hiển thị mật khẩu
   final Widget? suffixIcon; // Widget hiển thị ở cuối trường nhập liệu
   final Widget? trailingAction;
+
+  /// fieldKey: key RIÊNG cho TextFormField bên trong (dùng cho flutter driver test).
+  /// Khác với 'key' của AuthTextField widget cha — fieldKey chỉ áp vào ô input thật.
+  final Key? fieldKey;
+
   const AuthTextField({
     super.key,
     required this.label,
@@ -24,7 +29,9 @@ class AuthTextField extends StatelessWidget {
     this.onToggleVisibility,
     this.suffixIcon,
     this.trailingAction,
+    this.fieldKey, // Key cho TextFormField để flutter driver nhận diện
   });
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -51,7 +58,8 @@ class AuthTextField extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        // ô nhập liệu
+        // Ô nhập liệu
+        // fieldKey được truyền vào TextFormField để flutter driver có thể tìm bằng ByValueKey
         Container(
           decoration: BoxDecoration(
             color: colorScheme.surface,
@@ -59,6 +67,7 @@ class AuthTextField extends StatelessWidget {
             border: Border.all(color: onSurface.withValues(alpha: 0.08)),
           ),
           child: TextFormField(
+            key: fieldKey, // Chỉ TextFormField mới nhận key này (không phải AuthTextField cha)
             controller: controller,
             obscureText: obscureText,
             style: TextStyle(color: onSurface, fontSize: 14),

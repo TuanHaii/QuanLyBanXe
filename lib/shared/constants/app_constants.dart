@@ -9,7 +9,8 @@ class AppConstants {
   // API
   // Update this value for the local development environment.
   // On Android emulator, 10.0.2.2 maps to the host machine.
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+  // On real Android device, use the host machine's LAN IP (e.g., 192.168.55.19)
+  static const String baseUrl = 'http://192.168.55.19:3000/api';
   static const int connectionTimeout = 30000;
   static const int receiveTimeout = 30000;
 
