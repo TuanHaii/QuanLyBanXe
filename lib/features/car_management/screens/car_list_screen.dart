@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/constants/app_constants.dart';
 import '../../../shared/services/service_locator.dart';
+import '../../../shared/themes/app_colors.dart';
 import '../models/car_model.dart';
 import '../services/car_service.dart';
 import '../widgets/car_list_item.dart';
+import '../widgets/quick_add_car_sheet.dart';
 
 class CarListScreen extends StatefulWidget {
   const CarListScreen({super.key});
@@ -76,92 +78,189 @@ class _CarListScreenState extends State<CarListScreen> {
     }).toList();
   }
 
+  Future<void> _openAddCarScreen() async {
+    final created = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const QuickAddCarSheet(),
+    );
+    if (created == true && mounted) {
+      await _loadCars(showLoader: false);
+    }
+  }
+
+  Future<void> _editCar(CarModel car) async {
+    final updated = await context.push<bool>('/cars/${car.maXe}/edit');
+    if (updated == true && mounted) {
+      await _loadCars(showLoader: false);
+    }
+  }
+
+  Future<void> _deleteCar(CarModel car) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xóa xe'),
+        content: Text('Bạn có chắc muốn xóa xe "${car.tenXe}" không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) {
+      return;
+    }
+
+    try {
+      await _carService.xoaXe(car.maXe);
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Đã xóa xe ${car.tenXe}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      await _loadCars(showLoader: false);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Xóa xe thất bại: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.error,
+          ),
+        );
+    }
+  }
+
+  void _goHome() {
+    if (!mounted) {
+      return;
+    }
+
+    context.go(RouteNames.dashboard);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Danh sách xe'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadCars),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-              },
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm xe...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity > 350) {
+          _goHome();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Danh sách xe'),
+          actions: [
+            IconButton(icon: const Icon(Icons.refresh), onPressed: _loadCars),
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterDialog,
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Thêm xe mới',
+              onPressed: _openAddCarScreen,
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _openAddCarScreen,
+          icon: const Icon(Icons.add),
+          label: const Text('Thêm xe mới'),
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
+                },
+                decoration: InputDecoration(
+                  hintText: 'Tìm kiếm xe...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                ),
               ),
             ),
-          ),
-          // Car list
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _errorMessage != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(_errorMessage!, textAlign: TextAlign.center),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _loadCars,
-                            child: const Text('Thử lại'),
-                          ),
-                        ],
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(_errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _loadCars,
+                              child: const Text('Thử lại'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : _filteredCars.isEmpty
+                  ? const Center(child: Text('Không tìm thấy xe nào'))
+                  : RefreshIndicator(
+                      onRefresh: () => _loadCars(showLoader: false),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _filteredCars.length,
+                        itemBuilder: (context, index) {
+                          final car = _filteredCars[index];
+                          return CarListItem(
+                            car: car,
+                            onTap: () {
+                              context.push('/cars/${car.maXe}');
+                            },
+                            onEdit: () => _editCar(car),
+                            onDelete: () => _deleteCar(car),
+                          );
+                        },
                       ),
                     ),
-                  )
-                : _filteredCars.isEmpty
-                ? const Center(child: Text('Không tìm thấy xe nào'))
-                : RefreshIndicator(
-                    onRefresh: () => _loadCars(showLoader: false),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _filteredCars.length,
-                      itemBuilder: (context, index) {
-                        final car = _filteredCars[index];
-                        return CarListItem(
-                          car: car,
-                          onTap: () {
-                            context.push('/cars/${car.maXe}');
-                          },
-                        );
-                      },
-                    ),
-                  ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await context.push(RouteNames.addCar);
-          if (mounted) {
-            _loadCars(showLoader: false);
-          }
-        },
-        child: const Icon(Icons.add),
+            ),
+          ],
+        ),
       ),
     );
   }

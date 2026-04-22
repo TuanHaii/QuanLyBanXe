@@ -300,7 +300,8 @@ class SupportQuickActionSheet extends StatefulWidget {
   });
 
   @override
-  State<SupportQuickActionSheet> createState() => _SupportQuickActionSheetState();
+  State<SupportQuickActionSheet> createState() =>
+      _SupportQuickActionSheetState();
 }
 
 class _SupportQuickActionSheetState extends State<SupportQuickActionSheet> {
@@ -366,7 +367,9 @@ class _SupportQuickActionSheetState extends State<SupportQuickActionSheet> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.'),
+          content: const Text(
+            'Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.',
+          ),
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.error.withValues(alpha: 0.92),
         ),
@@ -461,7 +464,8 @@ class _SupportQuickActionSheetState extends State<SupportQuickActionSheet> {
           return const SizedBox.shrink();
         }
 
-        final requests = snapshot.data ?? const <SupportContactSubmissionModel>[];
+        final requests =
+            snapshot.data ?? const <SupportContactSubmissionModel>[];
         if (requests.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -623,7 +627,8 @@ class SalesQuickActionSheet extends StatefulWidget {
 }
 
 class _SalesQuickActionSheetState extends State<SalesQuickActionSheet> {
-  final SalesQuickActionService _salesService = getIt<SalesQuickActionService>();
+  final SalesQuickActionService _salesService =
+      getIt<SalesQuickActionService>();
   late Future<SalesQuickActionData> _salesFuture;
 
   @override
@@ -944,7 +949,7 @@ class _InventoryQuickActionSheetState extends State<InventoryQuickActionSheet> {
           child: FilledButton.icon(
             onPressed: () {
               Navigator.of(context).pop();
-              context.push(RouteNames.addCar);
+              context.go(RouteNames.carList);
             },
             icon: const Icon(Icons.add_rounded, size: 20),
             label: const Text('Thêm xe mới'),
@@ -1009,7 +1014,9 @@ class _QuickActionSheetScaffold extends StatelessWidget {
       top: false,
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: Container(
           height: MediaQuery.sizeOf(context).height * 0.9,
           decoration: BoxDecoration(
@@ -1315,10 +1322,7 @@ class _SuggestionTile extends StatelessWidget {
   final _QuickActionSheetPalette palette;
   final String suggestion;
 
-  const _SuggestionTile({
-    required this.palette,
-    required this.suggestion,
-  });
+  const _SuggestionTile({required this.palette, required this.suggestion});
 
   @override
   Widget build(BuildContext context) {
@@ -1361,10 +1365,7 @@ class _SupportItemTile extends StatelessWidget {
   final _QuickActionSheetPalette palette;
   final SupportItemModel item;
 
-  const _SupportItemTile({
-    required this.palette,
-    required this.item,
-  });
+  const _SupportItemTile({required this.palette, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -1448,10 +1449,7 @@ class _MyRequestTile extends StatelessWidget {
   final _QuickActionSheetPalette palette;
   final SupportContactSubmissionModel request;
 
-  const _MyRequestTile({
-    required this.palette,
-    required this.request,
-  });
+  const _MyRequestTile({required this.palette, required this.request});
 
   @override
   Widget build(BuildContext context) {
@@ -1581,10 +1579,7 @@ class _SaleItemTile extends StatelessWidget {
   final _QuickActionSheetPalette palette;
   final SaleOverviewItem sale;
 
-  const _SaleItemTile({
-    required this.palette,
-    required this.sale,
-  });
+  const _SaleItemTile({required this.palette, required this.sale});
 
   @override
   Widget build(BuildContext context) {
@@ -1680,10 +1675,7 @@ class _InventoryCarTile extends StatelessWidget {
   final _QuickActionSheetPalette palette;
   final InventoryCarItem car;
 
-  const _InventoryCarTile({
-    required this.palette,
-    required this.car,
-  });
+  const _InventoryCarTile({required this.palette, required this.car});
 
   @override
   Widget build(BuildContext context) {
@@ -1789,10 +1781,7 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final _QuickActionSheetPalette palette;
 
-  const _SectionTitle({
-    required this.title,
-    required this.palette,
-  });
+  const _SectionTitle({required this.title, required this.palette});
 
   @override
   Widget build(BuildContext context) {
@@ -1810,10 +1799,7 @@ class _EmptySection extends StatelessWidget {
   final _QuickActionSheetPalette palette;
   final String message;
 
-  const _EmptySection({
-    required this.palette,
-    required this.message,
-  });
+  const _EmptySection({required this.palette, required this.message});
 
   @override
   Widget build(BuildContext context) {

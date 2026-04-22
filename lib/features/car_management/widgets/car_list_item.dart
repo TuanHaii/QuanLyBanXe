@@ -6,8 +6,16 @@ import '../models/car_model.dart';
 class CarListItem extends StatelessWidget {
   final CarModel car;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const CarListItem({super.key, required this.car, required this.onTap});
+  const CarListItem({
+    super.key,
+    required this.car,
+    required this.onTap,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,15 +80,16 @@ class CarListItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          car.formattedPrice,
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                color: Theme.of(context).primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        Expanded(
+                          child: Text(
+                            car.formattedPrice,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -107,7 +116,26 @@ class CarListItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Chỉnh sửa xe',
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Xóa xe',
+                    onPressed: onDelete,
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: onDelete == null ? Colors.grey : AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

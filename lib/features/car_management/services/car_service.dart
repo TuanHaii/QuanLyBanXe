@@ -1,5 +1,6 @@
 import '../../../shared/services/api_service.dart';
 import '../models/car_model.dart';
+import '../models/catalog_option_model.dart';
 
 class CarService {
   final ApiService apiService;
@@ -49,6 +50,58 @@ class CarService {
     if (body['success'] == false) {
       throw Exception(body['message'] ?? 'Xóa xe thất bại');
     }
+  }
+
+  Future<List<CatalogOption>> fetchBrands() async {
+    final response = await apiService.get('/catalog/brands');
+    final body = _extractBody(response.data);
+
+    return _extractItems(
+      body['data'],
+    ).map(CatalogOption.fromBrandJson).toList(growable: false);
+  }
+
+  Future<List<CatalogOption>> fetchCarTypes() async {
+    final response = await apiService.get('/catalog/car-types');
+    final body = _extractBody(response.data);
+
+    return _extractItems(
+      body['data'],
+    ).map(CatalogOption.fromCategoryJson).toList(growable: false);
+  }
+
+  Future<CatalogOption> ensureBrand(String tenHang) async {
+    final normalized = tenHang.trim();
+    final existing = await fetchBrands();
+    for (final brand in existing) {
+      if (brand.name.toLowerCase() == normalized.toLowerCase()) {
+        return brand;
+      }
+    }
+
+    final response = await apiService.post(
+      '/catalog/brands',
+      data: {'tenHang': normalized},
+    );
+    final body = _extractBody(response.data);
+    return CatalogOption.fromBrandJson(_extractItem(body['data']));
+  }
+
+  Future<CatalogOption> ensureCarType(String tenLoai) async {
+    final normalized = tenLoai.trim();
+    final existing = await fetchCarTypes();
+    for (final category in existing) {
+      if (category.name.toLowerCase() == normalized.toLowerCase()) {
+        return category;
+      }
+    }
+
+    final response = await apiService.post(
+      '/catalog/car-types',
+      data: {'tenLoai': normalized},
+    );
+    final body = _extractBody(response.data);
+    return CatalogOption.fromCategoryJson(_extractItem(body['data']));
   }
 
   Future<List<CarModel>> fetchCars({String? query, dynamic status}) async {

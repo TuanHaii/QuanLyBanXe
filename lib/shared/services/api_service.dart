@@ -12,6 +12,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
+import 'package:quan_ly_ban_xe/shared/services/storage_service.dart';
 
 import '../constants/app_constants.dart';
 
@@ -34,10 +35,14 @@ class ApiService {
         baseUrl: AppConstants.baseUrl,
 
         // Timeout kết nối: nếu không kết nối được sau 30 giây thì báo lỗi
-        connectTimeout: const Duration(milliseconds: AppConstants.connectionTimeout),
+        connectTimeout: const Duration(
+          milliseconds: AppConstants.connectionTimeout,
+        ),
 
         // Timeout nhận dữ liệu: nếu server không trả về trong 30 giây thì báo lỗi
-        receiveTimeout: const Duration(milliseconds: AppConstants.receiveTimeout),
+        receiveTimeout: const Duration(
+          milliseconds: AppConstants.receiveTimeout,
+        ),
 
         // Header mặc định gửi kèm mọi request
         // Content-Type: json → báo server là ta gửi JSON
@@ -60,7 +65,9 @@ class ApiService {
       InterceptorsWrapper(
         // onRequest: chạy TRƯỚC khi gửi request → log thông tin request
         onRequest: (options, handler) {
-          _logger.d('🚀 REQUEST [${options.method}] → ${options.baseUrl}${options.path}');
+          _logger.d(
+            '🚀 REQUEST [${options.method}] → ${options.baseUrl}${options.path}',
+          );
           _logger.d('   Headers: ${options.headers}');
           if (options.data != null) {
             _logger.d('   Body: ${options.data}');
@@ -70,14 +77,18 @@ class ApiService {
 
         // onResponse: chạy KHI nhận được response → log status và data
         onResponse: (response, handler) {
-          _logger.d('✅ RESPONSE [${response.statusCode}] ← ${response.requestOptions.path}');
+          _logger.d(
+            '✅ RESPONSE [${response.statusCode}] ← ${response.requestOptions.path}',
+          );
           _logger.d('   Data: ${response.data}');
           return handler.next(response); // tiếp tục xử lý response
         },
 
         // onError: chạy KHI có lỗi → log lỗi để debug
         onError: (error, handler) {
-          _logger.e('❌ ERROR [${error.response?.statusCode}] ← ${error.requestOptions.path}');
+          _logger.e(
+            '❌ ERROR [${error.response?.statusCode}] ← ${error.requestOptions.path}',
+          );
           _logger.e('   Message: ${error.message}');
           _logger.e('   Response: ${error.response?.data}');
           return handler.next(error); // tiếp tục ném lỗi ra để catch ở Service
@@ -113,7 +124,8 @@ class ApiService {
   /// Ví dụ: GET /api/cars → lấy danh sách xe
   Future<Response<T>> get<T>(
     String path, {
-    Map<String, dynamic>? queryParameters, // tham số trên URL vd: ?page=1&limit=20
+    Map<String, dynamic>?
+    queryParameters, // tham số trên URL vd: ?page=1&limit=20
     Options? options,
   }) async {
     return await _dio.get<T>(
@@ -127,7 +139,7 @@ class ApiService {
   /// Ví dụ: POST /api/auth/login → đăng nhập
   Future<Response<T>> post<T>(
     String path, {
-    dynamic data,               // body của request (Map → được tự động encode thành JSON)
+    dynamic data, // body của request (Map → được tự động encode thành JSON)
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
@@ -198,9 +210,7 @@ class ApiService {
       path,
       data: formData,
       onSendProgress: onSendProgress,
-      options: Options(
-        headers: {'Content-Type': 'multipart/form-data'},
-      ),
+      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
     );
   }
 }

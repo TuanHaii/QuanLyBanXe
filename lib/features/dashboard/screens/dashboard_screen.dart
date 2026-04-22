@@ -297,7 +297,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return [];
     }
 
-    final stockTrend = s.inStock < s.totalCars ? '-${((1 - s.inStock / s.totalCars) * 100).toStringAsFixed(1)}%' : '0%';
+    final stockTrend = s.inStock < s.totalCars
+        ? '-${((1 - s.inStock / s.totalCars) * 100).toStringAsFixed(1)}%'
+        : '0%';
 
     return [
       _DashboardStat(
@@ -458,10 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openAddCarFlow() async {
-    final created = await context.push<bool>(RouteNames.addCar);
-    if (created == true && mounted) {
-      await _loadDashboard();
-    }
+    context.go(RouteNames.carList);
   }
 
   Future<void> _openCarList() async {
@@ -678,12 +677,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     final transactions = recentTx
-        .map((tx) => _RecentTransaction(
-              customerName: tx.customerName,
-              carName: tx.carName,
-              amount: tx.amount,
-              timeAgo: tx.timeAgo,
-            ))
+        .map(
+          (tx) => _RecentTransaction(
+            customerName: tx.customerName,
+            carName: tx.carName,
+            amount: tx.amount,
+            timeAgo: tx.timeAgo,
+          ),
+        )
         .toList();
 
     return Column(
@@ -885,12 +886,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return;
     }
   }
-
-  void _showFeatureComingSoon(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
 }
 
 class _DashboardStat {
@@ -958,9 +953,7 @@ class _ActionMenuTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: accentColor.withValues(alpha: 0.09),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: accentColor.withValues(alpha: 0.20),
-              ),
+              border: Border.all(color: accentColor.withValues(alpha: 0.20)),
             ),
             child: Row(
               children: [
@@ -995,10 +988,7 @@ class _ActionMenuTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: subtitleColor,
-                ),
+                Icon(Icons.chevron_right_rounded, color: subtitleColor),
               ],
             ),
           ),
