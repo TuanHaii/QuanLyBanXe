@@ -109,8 +109,9 @@ class _LoginScreenState extends State<LoginScreen>
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
-      // Thay bằng lệnh chuyển trang của bạn (Navigator hoặc GoRouter)
-      // context.go('/dashboard');
+      if (mounted) {
+        context.go(RouteNames.dashboard);
+      }
     } catch (e) {
       // Nếu có lỗi (sai pass, mất mạng), code sẽ nhảy vào đây
       // Bật Dialog hoặc SnackBar thông báo lỗi cho người dùng

@@ -11,7 +11,7 @@ class AppConstants {
   // On Android emulator, 10.0.2.2 maps to the host machine.
   // On real Android device, use the host machine's LAN IP (e.g., 192.168.55.19)
   // Override at runtime when the backend IP changes:
-  // flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3000/api
+  // flutter run --dart-define=API_BASE_URL=http://192.168.55.19:3000/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://10.0.2.2:3000/api',

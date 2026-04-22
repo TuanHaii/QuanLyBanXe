@@ -1009,6 +1009,9 @@ class _QuickActionSheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _QuickActionSheetPalette.fromTheme(Theme.of(context));
+    final topGradientColor = palette.isDark
+        ? palette.surface
+        : accentColor.withValues(alpha: 0.08);
 
     return SafeArea(
       top: false,
@@ -1022,13 +1025,11 @@ class _QuickActionSheetScaffold extends StatelessWidget {
           decoration: BoxDecoration(
             color: palette.background,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: palette.border),
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                accentColor.withValues(alpha: palette.isDark ? 0.10 : 0.08),
-                palette.background,
-              ],
+              colors: [topGradientColor, palette.background],
             ),
             boxShadow: [
               BoxShadow(
@@ -1134,22 +1135,22 @@ class _QuickActionSheetPalette {
 
     return _QuickActionSheetPalette(
       isDark: isDark,
-      background: theme.colorScheme.surface,
-      surface: isDark ? const Color(0xFF1A1D22) : Colors.white,
+      background: isDark ? const Color(0xFF0E131A) : theme.colorScheme.surface,
+      surface: isDark ? const Color(0xFF141B24) : Colors.white,
       border: isDark
-          ? Colors.white.withValues(alpha: 0.07)
+          ? Colors.white.withValues(alpha: 0.11)
           : Colors.black.withValues(alpha: 0.08),
       textPrimary: onSurface,
       textSecondary: onSurface.withValues(alpha: isDark ? 0.70 : 0.64),
       accent: accent,
       accentSoft: accent.withValues(alpha: 0.12),
       progressBackground: isDark
-          ? Colors.white.withValues(alpha: 0.10)
+          ? Colors.white.withValues(alpha: 0.12)
           : Colors.black.withValues(alpha: 0.08),
       inputFill: isDark
-          ? Colors.white.withValues(alpha: 0.04)
+          ? Colors.white.withValues(alpha: 0.08)
           : Colors.black.withValues(alpha: 0.03),
-      shadow: Colors.black.withValues(alpha: isDark ? 0.22 : 0.08),
+      shadow: Colors.black.withValues(alpha: isDark ? 0.34 : 0.08),
       onAccent: theme.colorScheme.onPrimary,
     );
   }

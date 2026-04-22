@@ -67,7 +67,8 @@ class AuthTextField extends StatelessWidget {
             border: Border.all(color: onSurface.withValues(alpha: 0.08)),
           ),
           child: TextFormField(
-            key: fieldKey, // Chỉ TextFormField mới nhận key này (không phải AuthTextField cha)
+            key:
+                fieldKey, // Chỉ TextFormField mới nhận key này (không phải AuthTextField cha)
             controller: controller,
             obscureText: obscureText,
             style: TextStyle(color: onSurface, fontSize: 14),

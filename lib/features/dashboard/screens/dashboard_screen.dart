@@ -134,14 +134,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _buildTopBarButton(
-              metrics: metrics,
-              icon: Icons.menu_rounded,
-              onTap: () => _openActionMenu(),
-            ),
-          ),
           Text(
             'PRECISION',
             style: AppTextStyles.titleLarge.copyWith(
@@ -463,32 +455,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     context.go(RouteNames.carList);
   }
 
-  Future<void> _openCarList() async {
-    await showModalBottomSheet<void>(
+  Future<T?> _showQuickActionSheet<T>({
+    required WidgetBuilder builder,
+    bool isScrollControlled = true,
+  }) {
+    return showModalBottomSheet<T>(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: isScrollControlled,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: builder,
+    );
+  }
+
+  Future<void> _openCarList() async {
+    await _showQuickActionSheet<void>(
       builder: (sheetContext) => const InventoryQuickActionSheet(),
     );
   }
 
   Future<void> _openSalesList() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+    await _showQuickActionSheet<void>(
       builder: (sheetContext) => const SalesQuickActionSheet(),
     );
   }
 
   Future<void> _openReportSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+    await _showQuickActionSheet<void>(
       builder: (sheetContext) => const ReportQuickActionSheet(),
     );
   }
@@ -496,11 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _openSupportSheet() async {
     final user = _authService.currentUser;
 
-    final submitted = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+    final submitted = await _showQuickActionSheet<bool>(
       builder: (sheetContext) => SupportQuickActionSheet(
         initialName: user?.name ?? '',
         initialEmail: user?.email ?? '',
@@ -519,147 +509,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _openNotifications() {
     context.go(RouteNames.notification);
-  }
-
-  void _openActionMenu() {
-    final palette = _palette(context);
-
-    showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: palette.navBackground,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-            border: Border.all(color: palette.navBorder, width: 1),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: palette.navBorder,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Trung tâm thao tác',
-                    style: AppTextStyles.titleLarge.copyWith(
-                      color: palette.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Truy cập nhanh các tác vụ quan trọng nhất.',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: palette.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ActionMenuTile(
-                    icon: Icons.add_circle_outline_rounded,
-                    title: 'Thêm xe mới',
-                    subtitle: 'Tạo nhanh hồ sơ xe vào kho',
-                    accentColor: const Color(0xFF2FA58A),
-                    textColor: palette.textPrimary,
-                    subtitleColor: palette.textSecondary,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(() {
-                        unawaited(_openAddCarFlow());
-                      });
-                    },
-                  ),
-                  _ActionMenuTile(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Kho hàng',
-                    subtitle: 'Xem tổng quan kho xe và tình trạng',
-                    accentColor: const Color(0xFF4E83F5),
-                    textColor: palette.textPrimary,
-                    subtitleColor: palette.textSecondary,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(() {
-                        unawaited(_openCarList());
-                      });
-                    },
-                  ),
-                  _ActionMenuTile(
-                    icon: Icons.receipt_long_rounded,
-                    title: 'Giao dịch',
-                    subtitle: 'Tổng quan tình hình bán hàng',
-                    accentColor: const Color(0xFFE0A442),
-                    textColor: palette.textPrimary,
-                    subtitleColor: palette.textSecondary,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(() {
-                        unawaited(_openSalesList());
-                      });
-                    },
-                  ),
-                  _ActionMenuTile(
-                    icon: Icons.pie_chart_outline_rounded,
-                    title: 'Báo cáo nhanh',
-                    subtitle: 'Xem doanh thu, mục tiêu và giao dịch mới',
-                    accentColor: const Color(0xFF5F86D9),
-                    textColor: palette.textPrimary,
-                    subtitleColor: palette.textSecondary,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(() {
-                        unawaited(_openReportSheet());
-                      });
-                    },
-                  ),
-                  _ActionMenuTile(
-                    icon: Icons.support_agent_rounded,
-                    title: 'Liên hệ hỗ trợ',
-                    subtitle: 'Gửi yêu cầu hoặc xem kênh hỗ trợ',
-                    accentColor: const Color(0xFFE57E6D),
-                    textColor: palette.textPrimary,
-                    subtitleColor: palette.textSecondary,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(() {
-                        unawaited(_openSupportSheet());
-                      });
-                    },
-                  ),
-                  _ActionMenuTile(
-                    icon: Icons.refresh_rounded,
-                    title: 'Làm mới dữ liệu',
-                    subtitle: 'Tải lại thống kê của dashboard',
-                    accentColor: const Color(0xFF6E90A9),
-                    textColor: palette.textPrimary,
-                    subtitleColor: palette.textSecondary,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(() {
-                        unawaited(_loadDashboard());
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Widget _buildRecentTransactions(_DashboardMetrics metrics) {
@@ -918,84 +767,6 @@ class _QuickActionItem {
     required this.accentColor,
     required this.onTap,
   });
-}
-
-class _ActionMenuTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color accentColor;
-  final Color textColor;
-  final Color subtitleColor;
-  final VoidCallback onTap;
-
-  const _ActionMenuTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.accentColor,
-    required this.textColor,
-    required this.subtitleColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.09),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: accentColor.withValues(alpha: 0.20)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: accentColor, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: AppTextStyles.titleSmall.copyWith(
-                          color: textColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: subtitleColor,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: subtitleColor),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _RecentTransaction {

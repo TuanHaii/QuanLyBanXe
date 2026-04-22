@@ -7,8 +7,9 @@ import '../../../shared/constants/app_constants.dart';
 import '../../../shared/services/service_locator.dart';
 import '../../../shared/services/theme_service.dart';
 import '../../../shared/themes/app_colors.dart';
-import '../../dashboard/models/dashboard_summary_model.dart';
-import '../../dashboard/services/dashboard_service.dart';
+import '../../dashboard/models/quick_action_models.dart';
+import '../../dashboard/services/report_service.dart';
+import '../../dashboard/widgets/quick_action_sheets.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,11 +21,10 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late final ThemeService _themeService;
   late final AuthService _authService;
-  late final DashboardService _dashboardService;
+  late final ReportService _reportService;
   bool _isApplyingTheme = false;
 
   UserModel? _user;
-  DashboardSummaryModel? _summary;
 
   _ProfilePalette _palette(BuildContext context) {
     return _ProfilePalette.fromTheme(Theme.of(context));
@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _themeService = getIt<ThemeService>();
     _authService = getIt<AuthService>();
-    _dashboardService = getIt<DashboardService>();
+    _reportService = getIt<ReportService>();
     _themeService.addListener(_handleThemeServiceChanged);
     _loadProfileData();
   }
@@ -48,14 +48,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _user = _authService.currentUser;
     });
-
-    try {
-      final summary = await _dashboardService.fetchDashboardSummary();
-      if (!mounted) return;
-      setState(() => _summary = summary);
-    } catch (_) {
-      // Silently ignore - stats will show fallback values
-    }
   }
 
   @override
@@ -126,12 +118,251 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showFeatureComingSoon(String message) {
+  // Mở một bottom sheet dùng chung cho tất cả tính năng thuộc mục Tôi.
+  // Việc gom vào 1 helper giúp đồng bộ nền mờ, bo góc và hành vi bàn phím.
+  Future<T?> _showProfileSheet<T>({
+    required WidgetBuilder builder,
+    bool isScrollControlled = true,
+  }) {
+    // showModalBottomSheet trả về dữ liệu khi sheet đóng, vì vậy ta trả trực tiếp
+    // Future<T?> để các luồng gọi bên ngoài có thể nhận kết quả (nếu có).
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: isScrollControlled,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: builder,
+    );
+  }
+
+  // Mở màn hình báo cáo nhanh của cá nhân.
+  // Ở đây ta tái sử dụng ReportQuickActionSheet đã có sẵn trong Dashboard
+  // để không nhân bản UI/logic API.
+  Future<void> _openMyReport() async {
+    await _showProfileSheet<void>(
+      builder: (_) => const ReportQuickActionSheet(),
+    );
+  }
+
+  // Mở phần mục tiêu doanh số.
+  // Luồng này gọi API report rồi render sheet tập trung vào mục tiêu + gợi ý.
+  Future<void> _openSalesGoals() async {
+    // Bật loading nhẹ để người dùng biết thao tác đang xử lý.
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+          content: Text('Đang tải mục tiêu doanh số...'),
+          duration: Duration(milliseconds: 900),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
+    try {
+      // Lấy dữ liệu report từ backend để có mục tiêu và tiến độ thực tế.
+      final ReportQuickActionData report = await _reportService
+          .fetchReportOverview();
+
+      // Nếu người dùng đã rời màn hình thì dừng ngay để tránh lỗi setState/context.
+      if (!mounted) {
+        return;
+      }
+
+      // Hiển thị sheet mục tiêu doanh số.
+      await _showProfileSheet<void>(
+        builder: (_) {
+          final palette = _palette(context);
+          final goals = report.goals;
+          return SafeArea(
+            top: false,
+            child: Container(
+              decoration: BoxDecoration(
+                color: palette.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border.all(color: palette.cardBorder),
+              ),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: palette.divider,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Mục Tiêu Doanh Số',
+                    style: AppTextStyles.titleLarge.copyWith(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    goals.progressText,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: palette.surfaceSoft,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: palette.cardBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mục tiêu doanh thu: ${goals.revenueTarget}',
+                          style: AppTextStyles.titleSmall.copyWith(
+                            color: palette.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            minHeight: 10,
+                            value: goals.progressValue,
+                            backgroundColor: palette.textMuted.withValues(
+                              alpha: 0.2,
+                            ),
+                            color: palette.accent,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Tỉ lệ đạt được: ${goals.achievedRate}',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: palette.accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Gợi ý cải thiện',
+                    style: AppTextStyles.titleSmall.copyWith(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (goals.suggestions.isEmpty)
+                    Text(
+                      'Chưa có gợi ý mới.',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: palette.textSecondary,
+                      ),
+                    )
+                  else
+                    ...goals.suggestions.map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Icon(
+                                Icons.circle,
+                                size: 7,
+                                color: palette.accent,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: palette.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      // Nếu gọi API lỗi thì hiển thị thông báo thân thiện để người dùng thử lại.
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              'Không thể tải mục tiêu doanh số: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
+
+  // Mở trung tâm hỗ trợ để xem kênh hỗ trợ và lịch sử yêu cầu.
+  Future<void> _openSupportCenter() async {
+    final user = _authService.currentUser;
+    await _showProfileSheet<void>(
+      builder: (_) => SupportQuickActionSheet(
+        initialName: user?.name ?? '',
+        initialEmail: user?.email ?? '',
+      ),
+    );
+  }
+
+  // Mở trực tiếp form liên hệ.
+  // Hiện tại vẫn dùng SupportQuickActionSheet vì đây là luồng liên hệ chính.
+  Future<void> _openContactUs() async {
+    final user = _authService.currentUser;
+    await _showProfileSheet<void>(
+      builder: (_) => SupportQuickActionSheet(
+        initialName: user?.name ?? '',
+        initialEmail: user?.email ?? '',
+      ),
+    );
+  }
+
+  // Hiển thị thông tin ứng dụng ở dạng dialog rõ ràng, không còn placeholder.
+  void _openAboutApp() {
+    final palette = _palette(context);
+
+    showAboutDialog(
+      context: context,
+      applicationName: AppConstants.appName,
+      applicationVersion: AppConstants.appVersion,
+      applicationIcon: CircleAvatar(
+        backgroundColor: palette.accent.withValues(alpha: 0.2),
+        child: Icon(Icons.directions_car_filled, color: palette.accent),
+      ),
+      children: const [
+        Text(
+          'Precision Auto là ứng dụng quản lý bán xe, theo dõi kho, giao dịch và hỗ trợ nhân viên bán hàng.',
+        ),
+      ],
+    );
   }
 
   Future<void> _handleLogout() async {
@@ -210,8 +441,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildProfileHeader(metrics),
-                SizedBox(height: metrics.px(16)),
-                _buildStats(metrics),
                 SizedBox(height: metrics.px(18)),
                 _buildSectionTitle('TÀI KHOẢN', metrics),
                 SizedBox(height: metrics.px(8)),
@@ -248,9 +477,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileActionItem(
                       icon: Icons.bar_chart_rounded,
                       title: 'Báo Cáo Của Tôi',
-                      onTap: () => _showFeatureComingSoon(
-                        'Báo cáo chi tiết đang được hoàn thiện.',
-                      ),
+                      onTap: _openMyReport,
                     ),
                     _ProfileActionItem(
                       icon: Icons.history_rounded,
@@ -260,9 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileActionItem(
                       icon: Icons.track_changes_outlined,
                       title: 'Mục Tiêu Doanh Số',
-                      onTap: () => _showFeatureComingSoon(
-                        'Mục tiêu doanh số sẽ sớm khả dụng.',
-                      ),
+                      onTap: _openSalesGoals,
                     ),
                   ],
                 ),
@@ -275,23 +500,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileActionItem(
                       icon: Icons.help_outline_rounded,
                       title: 'Trung Tâm Hỗ Trợ',
-                      onTap: () => _showFeatureComingSoon(
-                        'Trung tâm hỗ trợ đang được cập nhật.',
-                      ),
+                      onTap: _openSupportCenter,
                     ),
                     _ProfileActionItem(
                       icon: Icons.chat_bubble_outline_rounded,
                       title: 'Liên Hệ Chúng Tôi',
-                      onTap: () => _showFeatureComingSoon(
-                        'Kênh liên hệ trực tiếp đang được bổ sung.',
-                      ),
+                      onTap: _openContactUs,
                     ),
                     _ProfileActionItem(
                       icon: Icons.info_outline_rounded,
                       title: 'Về Ứng Dụng',
-                      onTap: () => _showFeatureComingSoon(
-                        'Thông tin phiên bản chi tiết sẽ sớm có.',
-                      ),
+                      onTap: _openAboutApp,
                     ),
                   ],
                 ),
@@ -420,87 +639,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return 'Nhân viên';
     }
-  }
-
-  Widget _buildStats(_ProfileMetrics metrics) {
-    final stats = [
-      _ProfileStatData(
-        icon: Icons.attach_money_rounded,
-        value: _summary != null ? '${_summary!.carsSold}' : '--',
-        label: 'Xe Đã Bán',
-      ),
-      _ProfileStatData(
-        icon: Icons.trending_up_rounded,
-        value: _summary?.totalRevenueLabel ?? '--',
-        label: 'Doanh Thu',
-      ),
-      _ProfileStatData(
-        icon: Icons.groups_2_outlined,
-        value: _summary != null ? '${_summary!.inStock}' : '--',
-        label: 'Trong Kho',
-      ),
-    ];
-
-    return Row(
-      children: List.generate(stats.length, (index) {
-        final stat = stats[index];
-
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: index == 0 ? 0 : metrics.px(4),
-              right: index == stats.length - 1 ? 0 : metrics.px(4),
-            ),
-            child: _buildStatCard(metrics: metrics, stat: stat),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildStatCard({
-    required _ProfileMetrics metrics,
-    required _ProfileStatData stat,
-  }) {
-    final palette = _palette(context);
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        metrics.px(11),
-        metrics.px(10),
-        metrics.px(11),
-        metrics.px(10),
-      ),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(metrics.px(14)),
-        border: Border.all(color: palette.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(stat.icon, color: palette.accent, size: metrics.px(15)),
-          SizedBox(height: metrics.px(5)),
-          Text(
-            stat.value,
-            style: AppTextStyles.titleLarge.copyWith(
-              color: palette.textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: metrics.fs(25),
-              height: 1,
-            ),
-          ),
-          SizedBox(height: metrics.px(3)),
-          Text(
-            stat.label,
-            style: AppTextStyles.labelMedium.copyWith(
-              color: palette.textMuted,
-              fontSize: metrics.fs(11),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSectionTitle(String text, _ProfileMetrics metrics) {
@@ -987,18 +1125,6 @@ class _ProfileActionItem {
     required this.icon,
     required this.title,
     required this.onTap,
-  });
-}
-
-class _ProfileStatData {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _ProfileStatData({
-    required this.icon,
-    required this.value,
-    required this.label,
   });
 }
 

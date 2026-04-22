@@ -6,6 +6,7 @@ import '../../../shared/constants/app_constants.dart';
 import '../../../shared/services/service_locator.dart';
 import '../models/mall_product_model.dart';
 import '../services/mall_service.dart';
+import '../widgets/sell_car_sheet.dart';
 
 class MallScreen extends StatefulWidget {
   const MallScreen({super.key});
@@ -162,6 +163,63 @@ class _MallScreenState extends State<MallScreen> {
       );
   }
 
+  Future<void> _openSellSheet(MallProduct product) async {
+    if (product.stock <= 0 || product.status != 'available') {
+      _showFeatureComingSoon('Xe này hiện không khả dụng để bán.');
+      return;
+    }
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: (sheetContext) {
+        return SellCarSheet(
+          product: product,
+          onSubmit:
+              ({
+                required String hoTen,
+                required String sdt,
+                String? email,
+                String? diaChi,
+                required int diemTichLuy,
+                required String phuongThucThanhToan,
+              }) {
+                return _mallService.sellProduct(
+                  productId: product.id,
+                  hoTen: hoTen,
+                  sdt: sdt,
+                  email: email,
+                  diaChi: diaChi,
+                  diemTichLuy: diemTichLuy,
+                  phuongThucThanhToan: phuongThucThanhToan,
+                );
+              },
+        );
+      },
+    );
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    final invoice = result['invoice'] as Map<String, dynamic>?;
+    final maHoaDon = invoice?['maHoaDon']?.toString() ?? 'N/A';
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Bán xe thành công. Hóa đơn #$maHoaDon'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+    await _loadProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = _palette(context);
@@ -214,45 +272,25 @@ class _MallScreenState extends State<MallScreen> {
   Widget _buildHeader() {
     final palette = _palette(context);
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Khám phá',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: palette.textSecondary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                'Trung Tâm Xe',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: palette.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 24,
-                  height: 1.03,
-                ),
-              ),
-            ],
+        Text(
+          'Khám phá',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: palette.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: palette.surfaceSoft,
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: palette.cardBorder),
-          ),
-          child: IconButton(
-            onPressed: _loadProducts,
-            icon: Icon(Icons.tune, color: palette.accent, size: 21),
-            padding: const EdgeInsets.all(12),
-            constraints: const BoxConstraints.tightFor(width: 46, height: 46),
-            tooltip: 'Làm mới',
+        const SizedBox(height: 3),
+        Text(
+          'Trung Tâm Xe',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: palette.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            height: 1.03,
           ),
         ),
       ],
@@ -608,94 +646,104 @@ class _MallScreenState extends State<MallScreen> {
   Widget _buildProductCard(MallProduct product) {
     final palette = _palette(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: palette.cardBorder),
-      ),
-      padding: const EdgeInsets.all(11),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        onTap: () => _openSellSheet(product),
+        child: Container(
+          decoration: BoxDecoration(
+            color: palette.surface,
+            borderRadius: BorderRadius.circular(_cardRadius),
+            border: Border.all(color: palette.cardBorder),
+          ),
+          padding: const EdgeInsets.all(11),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBrandLogo(product),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: product.badgeColorValue.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  product.badgeLabel,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: product.badgeColorValue,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
+              Row(
+                children: [
+                  _buildBrandLogo(product),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: product.badgeColorValue.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      product.badgeLabel,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: product.badgeColorValue,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 11),
+              Text(
+                product.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: palette.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  height: 1.15,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 11),
-          Text(
-            product.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: palette.textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-              height: 1.15,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${product.year} · ${product.category}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: palette.textSecondary,
-              fontSize: 12,
-              height: 1.2,
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Icon(Icons.star_rounded, size: 14, color: palette.accent),
-              const SizedBox(width: 3),
+              const SizedBox(height: 4),
               Text(
-                product.rating.toStringAsFixed(1),
+                '${product.year} · ${product.category}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: palette.textPrimary.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11.5,
+                  color: palette.textSecondary,
+                  fontSize: 12,
+                  height: 1.2,
                 ),
               ),
               const Spacer(),
+              Row(
+                children: [
+                  Icon(Icons.star_rounded, size: 14, color: palette.accent),
+                  const SizedBox(width: 3),
+                  Text(
+                    product.rating.toStringAsFixed(1),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: palette.textPrimary.withValues(alpha: 0.82),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Kho: ${product.stock}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: palette.textMuted,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
               Text(
-                'Kho: ${product.stock}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: palette.textMuted,
-                  fontSize: 11.5,
+                product.priceLabel,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: palette.accent,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 28,
+                  height: 1,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 5),
-          Text(
-            product.priceLabel,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: palette.accent,
-              fontWeight: FontWeight.w800,
-              fontSize: 28,
-              height: 1,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
